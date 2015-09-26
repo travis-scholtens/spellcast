@@ -26,6 +26,7 @@ var Game = {
     _generateMap: function() {
         this.width = 128;
         this.height = 128;
+        this.radius = Math.sqrt(this.width * this.width + this.height * this.height);
         var digger = new ROT.Map.Digger(this.width, this.height);
         var freeCells = [];
         
@@ -33,17 +34,29 @@ var Game = {
             if (value) { return; }
             
             var key = x+","+y;
-            this.map[key] = ".";
+            this.map[key] = " ";
             freeCells.push(key);
         }
         digger.create(digCallback.bind(this));
+
+        this.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
+          return (x + ',' + y) in this.map;
+        }.bind(this));
         
         this._generateBoxes(freeCells);
         
         this.player = this._createBeing(Player, freeCells);
         this.pedro = this._createBeing(Pedro, freeCells);
-
+        this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
+    },
+
+    revealFrom: function(loc) {
+      this.fov.compute(loc.x, loc.y, this.radius, function(x, y, _, _) {
+        var key = x + ',' + y;
+        if (this.map[key] === ' ')
+          this.map[key] = '.';
+      }.bind(this));
     },
     
     _createBeing: function(what, freeCells) {
@@ -151,6 +164,7 @@ Player.prototype.handleEvent = function(e) {
 
     this._x = newX;
     this._y = newY;
+    Game.revealFrom({x: this._x, y: this._y});
     Game._drawWholeMap();
     window.removeEventListener("keydown", this);
     Game.engine.unlock();
