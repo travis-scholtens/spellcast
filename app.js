@@ -62,6 +62,38 @@ var Game = {
         this.pedro = this._createBeing(Pedro, freeCells);
         this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
+        this.modal({x: 16, y: 6});
+    },
+
+    modal: function(size) {
+      var display = this.display.getOptions();
+      var xmax = size.x,
+          ymax = size.y;
+      for (var x = 0; x < xmax; x++)
+        for (var y = 0; y < ymax; y++) {
+          var glyph = x == 0 ? (y == 0 ? '\u256d' :
+                                y == 2 ? '\u251c' :
+                                y == ymax - 1 ? '\u2570' :
+                                '\u2502') :
+                      x == 1 ? (y == 0 ? '\u2500' :
+                                y == 1 ? '\u2573' :
+                                y == 2 ? '\u2500' :
+                                y == ymax - 1 ? '\u2500' :
+                                '') :
+                      x == 2 ? (y == 0 ? '\u252c' :
+                                y == 1 ? '\u2502' :
+                                y == 2 ? '\u2518' :
+                                y == ymax - 1 ? '\u2500' :
+                                '') :
+                      x == xmax - 1 ? (y == 0 ? '\u256e':
+                                       y == ymax - 1 ? '\u256f' :
+                                       '\u2502') :
+                      y == 0 || y == ymax  - 1 ? '\u2500' :
+                      '';
+          this.display.draw((display.width - xmax)/2 + x,
+                            (display.height - ymax)/2 + y,
+                            glyph);
+        }
     },
 
     revealFrom: function(loc) {
