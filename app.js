@@ -7,7 +7,7 @@ var Game = {
     ananas: null,
     
     init: function() {
-        this.display = new ROT.Display({width: 20, height: 20, fontSize: 24, spacing:1.1});
+        this.display = new ROT.Display({width: 24, height: 24, fontSize: 24, spacing:1});
         var canvas = this.display.getContainer();
         canvas.style.width = '100%';
         canvas.style.height = '100%';
@@ -67,7 +67,7 @@ var Game = {
     _drawWholeMap: function() {
       var display = this.display.getOptions();
       for (var dx = 0; dx < display.width; dx++)
-        for (var dy = 0; dy < display.height; dy++) {
+        for (var dy = 0; dy < display.height - 3; dy++) {
           var x = this.player.getX() - display.width/2 + dx,
               y = this.player.getY() - display.height/2 + dy;
           if ((0 <= x && x < this.width) &&
@@ -79,6 +79,33 @@ var Game = {
           }
         }
       this.display.draw(display.width/2, display.height/2, "@", "#ff0");
+      // bottom rack:
+      //  _  _  _  _  _  _  _
+      //
+      // 0....5....1....1....2.
+      //           0    5    0
+      for (var dx = 0; dx < display.width; dx++) {
+        var glyph = dx == 0 ? '\u2514' :
+                    dx == display.width - 1 ? '\u2518' :
+                    '\u2500';
+        this.display.draw(dx, display.height - 1, glyph, "tan");
+      }
+      this.display.drawText(1.5, display.height - 2, '%b{tan}%c{black}c');
+      this.display.drawText(1.5, display.height - 2, '%b{tan}%c{black}\u2083');
+      this.display.drawText(4.5, display.height - 2, '%b{tan}%c{black}a');
+      this.display.drawText(4.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(7.5, display.height - 2, '%b{tan}%c{black}z');
+      this.display.drawText(7.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(8.25, display.height - 2, '%b{tan}%c{black}\u2080');
+      this.display.drawText(10.5, display.height - 2, '%b{tan}%c{black}e');
+      this.display.drawText(10.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(13.5, display.height - 2, '%b{tan}%c{black}o');
+      this.display.drawText(13.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(16.5, display.height - 2, '%b{tan}%c{black}t');
+      this.display.drawText(16.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(19.5, display.height - 2, '%b{tan}%c{black}q');
+      this.display.drawText(19.5, display.height - 2, '%b{tan}%c{black}\u2081');
+      this.display.drawText(20.25, display.height - 2, '%b{tan}%c{black}\u2080');
     }
 };
 
