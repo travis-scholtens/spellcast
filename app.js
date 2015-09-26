@@ -44,8 +44,21 @@ var Game = {
         }.bind(this));
         
         this._generateBoxes(freeCells);
-        
+
+        var upRoom = ROT.RNG.getUniformInt(0, digger.getRooms().length-1);
+        var downRoom = upRoom;
+        while (downRoom == upRoom)
+          downRoom = ROT.RNG.getUniformInt(0, digger.getRooms().length-1);
+
+        var upCenter = digger.getRooms()[upRoom].getCenter(),
+            downCenter = digger.getRooms()[downRoom].getCenter();
+        this.map[(upCenter[0] - 1) + ',' + upCenter[1]] = '\u261d';
+        this.map[downCenter[0] + ',' + downCenter[1]] = '\u261f';
+
         this.player = this._createBeing(Player, freeCells);
+        this.player._x = upCenter[0] + 1;
+        this.player._y = upCenter[1];
+
         this.pedro = this._createBeing(Pedro, freeCells);
         this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
