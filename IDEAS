@@ -1,0 +1,36 @@
+Collect corpses of dead creatures, make anagrams out of the symbols that represent them to cast spells
+
+* Name with "spell" pun
+  * and "corpse" pun?
+* Power of spell based on number/value (e.g., Scrabble scoring) of letters
+* Limit to 7 corpses in inventory (rack)
+* Effects derived from definition
+  * Type (summon, enchantment, charm) based on part of speech (noun, adjective, adverb)
+  * Power based on puns of numbers in def ("to" is 2, "free" is 3, etc.), multiplied
+  * Sphere/value (e.g., fire buff, edge immunity, large creature, blunt weapon) from words in def, or synonyms thereof
+* Creatures taken from dictionary, one per letter
+  * Size/kind taken from/influenced by def?
+* Proper names invoked using capitals
+  * Representing bosses
+  * 1 per floor
+  * Y for Yendor, win state?
+* Wiktionary as source
+  * 0.5 GB
+  * Ship with snapshot
+  * Check in real time/on schedule
+    * Snapshot at time of use to prevent scumming
+* Letter limit (7, like Scrabble)
+  * Can only use full rack?
+  * Or allow dropping, but takes a turn?
+  * Bingo bonus?
+* Minimal
+  * Casting spell gains experience
+    * Scrabble scoring
+    * Bingo
+    * 7 in rack + 1 on floor
+  * Enemies distributed like Scrabble
+    * But floor N only has first N, e.g. first floor has only a's
+  * Progressively harder enemies (more damage and/or health)
+  * Healing? Maybe not necessary?
+  * Discards stay where they are, on the floor
+  * Finite enemies per floor
