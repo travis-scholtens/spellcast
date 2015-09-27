@@ -34,7 +34,7 @@ var Game = {
             if (value) { return; }
             
             var key = x+","+y;
-            this.map[key] = " ";
+            this.map[key] = new Tile('.');
             freeCells.push(key);
         }
         digger.create(digCallback.bind(this));
@@ -52,8 +52,8 @@ var Game = {
 
         var upCenter = digger.getRooms()[upRoom].getCenter(),
             downCenter = digger.getRooms()[downRoom].getCenter();
-        this.map[(upCenter[0] - 1) + ',' + upCenter[1]] = '\u261d';
-        this.map[downCenter[0] + ',' + downCenter[1]] = '\u261f';
+        this.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
+        this.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
 
         this.player = this._createBeing(Player, freeCells);
         this.player._x = upCenter[0] + 1;
@@ -98,9 +98,9 @@ var Game = {
 
     revealFrom: function(loc) {
       this.fov.compute(loc.x, loc.y, this.radius, function(x, y, _, _) {
-        var key = x + ',' + y;
-        if (this.map[key] === ' ')
-          this.map[key] = '.';
+        var tile = this.map[x + ',' + y];
+        if (tile != undefined)
+          tile.revealed = true;
       }.bind(this));
     },
     
@@ -117,7 +117,7 @@ var Game = {
         for (var i=0;i<10;i++) {
             var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
             var key = freeCells.splice(index, 1)[0];
-            this.map[key] = "*";
+            this.map[key].glyph = "*";
             if (!i) { this.ananas = key; } /* first box contains an ananas */
         }
     },
@@ -132,8 +132,11 @@ var Game = {
               (0 <= y && y < this.height)) {
             if (x == this.pedro._x && y == this.pedro._y)
               this.display.draw(dx, dy, "P", "red");
-            else
-              this.display.draw(dx, dy, this.map[x + ',' + y]);
+            else {
+              var tile = this.map[x + ',' + y];
+              var glyph = tile != undefined && tile.revealed ? tile.glyph : '';
+              this.display.draw(dx, dy, glyph);
+            }
           }
         }
       this.display.draw(display.width/2, display.height/2, "@", "#ff0");
@@ -175,6 +178,12 @@ var Game = {
       this.display.drawText(22.25, display.height - 2, '%b{gray}%c{black}\u2081');
       this.display.drawText(23, display.height - 2, '%b{gray}%c{black}\u2080');
     }
+};
+
+var Tile = function(glyph) {
+  this.glyph = glyph;
+  this.revealed = false;
+  this.contents = null;
 };
 
 var Player = function(x, y) {
@@ -227,7 +236,7 @@ Player.prototype.handleEvent = function(e) {
 
 Player.prototype._checkBox = function() {
     var key = this._x + "," + this._y;
-    if (Game.map[key] != "*") {
+    if (Game.map[key].glyph != "*") {
         alert("There is no box here!");
     } else if (key == Game.ananas) {
         alert("Hooray! You found an ananas and won this game.");
