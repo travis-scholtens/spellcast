@@ -4,6 +4,7 @@ var Game = {
     engine: null,
     player: null,
     ananas: null,
+    messages: [],
     
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
@@ -130,8 +131,14 @@ var Game = {
     
     _drawWholeMap: function() {
       var display = this.display.getOptions();
+      var startY;
+      if (this.messages.length > 0) {
+        this.display.drawText(0, 0, '> ' + this.messages[this.messages.length-1]);
+        startY = 1;
+      } else
+        startY = 0;
       for (var dx = 0; dx < display.width; dx++)
-        for (var dy = 0; dy < display.height - 3; dy++) {
+        for (var dy = startY; dy < display.height - 3; dy++) {
           var x = this.player.getX() - display.width/2 + dx,
               y = this.player.getY() - display.height/2 + dy;
           if ((0 <= x && x < this.width) &&
@@ -181,6 +188,10 @@ var Game = {
       this.display.drawText(22.25, display.height - 2, '%b{gray}%c{black}q');
       this.display.drawText(22.25, display.height - 2, '%b{gray}%c{black}\u2081');
       this.display.drawText(23, display.height - 2, '%b{gray}%c{black}\u2080');
+    },
+
+    message: function(text) {
+      this.messages.push(text);
     }
 };
 
@@ -273,18 +284,19 @@ Pedro.prototype.act = function() {
     astar.compute(this._x, this._y, pathCallback);
 
     path.shift();
-    if (path.length == 1) {
-        Game.engine.lock();
-        alert("Game over - you were captured by Pedro!");
-    } else {
+    if (path.length > 0) {
         x = path[0][0];
         y = path[0][1];
-        if (Game.map[x + ',' + y].contents != null)
-          return;
-        Game.map[this._x + ',' + this._y].contents = null;
-        this._x = x;
-        this._y = y;
-        Game.map[this._x + ',' + this._y].contents = this;
+        if (x == Game.player._x && y == Game.player._y)
+          Game.message('The ant hits you!');
+        else {
+          if (Game.map[x + ',' + y].contents != null)
+            return;
+          Game.map[this._x + ',' + this._y].contents = null;
+          this._x = x;
+          this._y = y;
+          Game.map[this._x + ',' + this._y].contents = this;
+        }
         Game._drawWholeMap();
     }
 }
