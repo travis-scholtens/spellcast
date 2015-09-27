@@ -3,7 +3,6 @@ var Game = {
     map: {},
     engine: null,
     player: null,
-    pedro: null,
     ananas: null,
     
     init: function() {
@@ -17,7 +16,8 @@ var Game = {
         
         var scheduler = new ROT.Scheduler.Simple();
         scheduler.add(this.player, true);
-        scheduler.add(this.pedro, true);
+        for (var i = 0; i < this.foes.length; i++)
+          scheduler.add(this.foes[i], true);
 
         this.engine = new ROT.Engine(scheduler);
         this.engine.start();
@@ -60,7 +60,10 @@ var Game = {
         this.player._x = upCenter[0] + 1;
         this.player._y = upCenter[1];
 
-        this.pedro = this._createBeing(Pedro, freeCells);
+        this.foes = [];
+        for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++)
+          this.foes.push(this._createBeing(Pedro, freeCells));
+
         this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
         this.modal({x: 16, y: 6});
@@ -111,7 +114,9 @@ var Game = {
         var parts = key.split(",");
         var x = parseInt(parts[0]);
         var y = parseInt(parts[1]);
-        return new what(x, y);
+        var being = new what(x, y);
+        this.map[key].contents = being;
+        return being;
     },
     
     _generateBoxes: function(freeCells) {
@@ -131,13 +136,11 @@ var Game = {
               y = this.player.getY() - display.height/2 + dy;
           if ((0 <= x && x < this.width) &&
               (0 <= y && y < this.height)) {
-            if (x == this.pedro._x && y == this.pedro._y)
-              this.display.draw(dx, dy, "P", "red");
-            else {
-              var tile = this.map[x + ',' + y];
-              var glyph = tile != undefined && tile.revealed ? tile.glyph : '';
-              this.display.draw(dx, dy, glyph);
-            }
+            var tile = this.map[x + ',' + y];
+            var glyph = tile != undefined && tile.revealed ?
+                (tile.contents != null ? tile.contents.glyph : tile.glyph) :
+                '';
+            this.display.draw(dx, dy, glyph);
           }
         }
       this.display.draw(display.width/2, display.height/2, "@", "#ff0");
@@ -251,6 +254,7 @@ Player.prototype._checkBox = function() {
 var Pedro = function(x, y) {
     this._x = x;
     this._y = y;
+    this.glyph = 'a';
 }
     
 Pedro.prototype.act = function() {
@@ -275,8 +279,12 @@ Pedro.prototype.act = function() {
     } else {
         x = path[0][0];
         y = path[0][1];
+        if (Game.map[x + ',' + y].contents != null)
+          return;
+        Game.map[this._x + ',' + this._y].contents = null;
         this._x = x;
         this._y = y;
+        Game.map[this._x + ',' + this._y].contents = this;
         Game._drawWholeMap();
     }
 }
