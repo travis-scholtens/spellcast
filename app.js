@@ -45,13 +45,14 @@ var Game = {
         
         this._generateBoxes(freeCells);
 
-        var upRoom = ROT.RNG.getUniformInt(0, digger.getRooms().length-1);
+        var rooms = digger.getRooms();
+        var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
         var downRoom = upRoom;
         while (downRoom == upRoom)
-          downRoom = ROT.RNG.getUniformInt(0, digger.getRooms().length-1);
+          downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
 
-        var upCenter = digger.getRooms()[upRoom].getCenter(),
-            downCenter = digger.getRooms()[downRoom].getCenter();
+        var upCenter = rooms[upRoom].getCenter(),
+            downCenter = rooms[downRoom].getCenter();
         this.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
         this.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
 
