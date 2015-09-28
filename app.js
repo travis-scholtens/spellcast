@@ -145,10 +145,17 @@ var Game = {
               this.display.draw(dx, dy, '@', '#ff0');
             else {
               var tile = this.map[x + ',' + y];
-              var glyph = tile != undefined && tile.revealed ?
-                  (tile.contents != null ? tile.contents.glyph : tile.glyph) :
-                  '';
-              this.display.draw(dx, dy, glyph);
+              var glyph = '', color = 'white';
+              if (tile != undefined && tile.revealed) {
+                if (tile.contents != null) {
+                  glyph = tile.contents.glyph;
+                  color = tile.contents.health > 0 ?
+                      tile.contents.color :
+                      'darkgray';
+                } else
+                  glyph = tile.glyph;
+              }
+              this.display.draw(dx, dy, glyph, color);
             }
           }
         }
@@ -214,6 +221,14 @@ Player.prototype.act = function() {
     Game.engine.lock();
     window.addEventListener("keydown", this);
 }
+
+Player.prototype.attack = function(foe) {
+  var damage = Math.min(
+      Math.max(0, Math.floor(ROT.RNG.getNormal(5, 2))),
+      foe.health);
+  foe.health -= damage;
+  return damage;
+}
     
 Player.prototype.handleEvent = function(e) {
     var code = e.keyCode;
@@ -243,8 +258,15 @@ Player.prototype.handleEvent = function(e) {
     if (!(newKey in Game.map)) { return; }
 
     var contents = Game.map[newKey].contents;
-    if (contents != null)
-      Game.message('You hit the ant!');
+    if (contents != null && contents.health > 0) {
+      var damage = this.attack(contents);
+      if (contents.health == 0)
+        Game.message('You kill the ant!');
+      else if (damage > 0)
+        Game.message('You hit the ant! %c{red}(-' + damage + ')');
+      else
+        Game.message('You miss the ant.');
+    }
     else {
       this._x = newX;
       this._y = newY;
@@ -272,9 +294,13 @@ var Pedro = function(x, y) {
     this._x = x;
     this._y = y;
     this.glyph = 'a';
+    this.health = 10;
+    this.color = 'red';
 }
     
 Pedro.prototype.act = function() {
+    if (this.health == 0) return;
+
     var x = Game.player.getX();
     var y = Game.player.getY();
 
