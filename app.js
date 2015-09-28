@@ -15,12 +15,12 @@ var Game = {
         
         this._generateMap();
         
-        var scheduler = new ROT.Scheduler.Simple();
-        scheduler.add(this.player, true);
+        this.scheduler = new ROT.Scheduler.Simple();
+        this.scheduler.add(this.player, true);
         for (var i = 0; i < this.foes.length; i++)
-          scheduler.add(this.foes[i], true);
+          this.scheduler.add(this.foes[i], true);
 
-        this.engine = new ROT.Engine(scheduler);
+        this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
     },
     
@@ -149,9 +149,10 @@ var Game = {
               if (tile != undefined && tile.revealed) {
                 if (tile.contents != null) {
                   glyph = tile.contents.glyph;
-                  color = tile.contents.health > 0 ?
-                      tile.contents.color :
-                      'darkgray';
+                  color = tile.contents.color;
+                } else if (tile.corpse != null) {
+                  glyph = tile.corpse;
+                  color = 'darkgray';
                 } else
                   glyph = tile.glyph;
               }
@@ -207,6 +208,7 @@ var Tile = function(glyph) {
   this.glyph = glyph;
   this.revealed = false;
   this.contents = null;
+  this.corpse = null;
 };
 
 var Player = function(x, y) {
@@ -228,6 +230,28 @@ Player.prototype.attack = function(foe) {
       foe.health);
   foe.health -= damage;
   return damage;
+}
+
+dropCorpse = function(map, x, y, corpse) {
+  var q = [[x,y]];
+  var seen = {};
+  while (q.length > 0) {
+    var u = q.shift();
+    var key = u[0] + ',' + u[1];
+    if (map[key].corpse == null) {
+      map[key].corpse = corpse;
+      return;
+    }
+    seen[key] = true;
+    for (var dx = -1; dx <= 1; dx++)
+      for (var dy = -1; dy <= 1; dy++)
+        if (dx != 0 || dy != 0) {
+          var nx = u[0] + dx, ny = u[1] + dy;
+          var nkey = nx + ',' + ny;
+          if (nkey in map && !(nkey in seen))
+            q.push([nx, ny]);
+        }
+  }
 }
     
 Player.prototype.handleEvent = function(e) {
@@ -258,10 +282,14 @@ Player.prototype.handleEvent = function(e) {
     if (!(newKey in Game.map)) { return; }
 
     var contents = Game.map[newKey].contents;
-    if (contents != null && contents.health > 0) {
+    if (contents != null) {
       var damage = this.attack(contents);
-      if (contents.health == 0)
+      if (contents.health == 0) {
+        Game.map[newKey].contents = null;
+        dropCorpse(Game.map, newX, newY, contents.glyph);
+        Game.scheduler.remove(contents);
         Game.message('You kill the ant!');
+      }
       else if (damage > 0)
         Game.message('You hit the ant! %c{red}(-' + damage + ')');
       else
@@ -299,8 +327,6 @@ var Pedro = function(x, y) {
 }
     
 Pedro.prototype.act = function() {
-    if (this.health == 0) return;
-
     var x = Game.player.getX();
     var y = Game.player.getY();
 
