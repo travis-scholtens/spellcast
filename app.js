@@ -131,26 +131,27 @@ var Game = {
     
     _drawWholeMap: function() {
       var display = this.display.getOptions();
-      var startY;
-      if (this.messages.length > 0) {
-        this.display.drawText(0, 0, '> ' + this.messages[this.messages.length-1]);
-        startY = 1;
-      } else
-        startY = 0;
+      var messageCount = this.messages.length;
+      for (var i = 0; i < messageCount; i++)
+        this.display.drawText(0, i, '> ' + this.messages[i]);
+      this.messages.length = 0;
       for (var dx = 0; dx < display.width; dx++)
-        for (var dy = startY; dy < display.height - 3; dy++) {
+        for (var dy = messageCount; dy < display.height - 3; dy++) {
           var x = this.player.getX() - display.width/2 + dx,
               y = this.player.getY() - display.height/2 + dy;
           if ((0 <= x && x < this.width) &&
               (0 <= y && y < this.height)) {
-            var tile = this.map[x + ',' + y];
-            var glyph = tile != undefined && tile.revealed ?
-                (tile.contents != null ? tile.contents.glyph : tile.glyph) :
-                '';
-            this.display.draw(dx, dy, glyph);
+            if (x == this.player._x && y == this.player._y)
+              this.display.draw(dx, dy, '@', '#ff0');
+            else {
+              var tile = this.map[x + ',' + y];
+              var glyph = tile != undefined && tile.revealed ?
+                  (tile.contents != null ? tile.contents.glyph : tile.glyph) :
+                  '';
+              this.display.draw(dx, dy, glyph);
+            }
           }
         }
-      this.display.draw(display.width/2, display.height/2, "@", "#ff0");
       // bottom rack:
       //  _  _  _  _  _  _  _
       //
@@ -241,9 +242,14 @@ Player.prototype.handleEvent = function(e) {
     var newKey = newX + "," + newY;
     if (!(newKey in Game.map)) { return; }
 
-    this._x = newX;
-    this._y = newY;
-    Game.revealFrom({x: this._x, y: this._y});
+    var contents = Game.map[newKey].contents;
+    if (contents != null)
+      Game.message('You hit the ant!');
+    else {
+      this._x = newX;
+      this._y = newY;
+      Game.revealFrom({x: this._x, y: this._y});
+    }
     Game._drawWholeMap();
     window.removeEventListener("keydown", this);
     Game.engine.unlock();
@@ -297,6 +303,5 @@ Pedro.prototype.act = function() {
           this._y = y;
           Game.map[this._x + ',' + this._y].contents = this;
         }
-        Game._drawWholeMap();
     }
 }
