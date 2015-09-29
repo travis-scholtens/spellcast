@@ -5,6 +5,8 @@ var Game = {
     player: null,
     ananas: null,
     messages: [],
+    rack: [],
+    rack_size: 6,
 
     values: {
       a: 1,
@@ -230,20 +232,11 @@ var Game = {
                     '\u2500';
         this.display.draw(dx, display.height - 1, glyph, "tan");
       }
-      this.display.drawText(1.5, display.height - 2, '%b{tan}%c{black}c');
-      this.display.drawText(1.5, display.height - 2, '%b{tan}%c{black}\u2083');
-      this.display.drawText(4.5, display.height - 2, '%b{tan}%c{black}a');
-      this.display.drawText(4.5, display.height - 2, '%b{tan}%c{black}\u2081');
-      this.display.drawText(7.25, display.height - 2, '%b{tan}%c{black}z');
-      this.display.drawText(7.25, display.height - 2, '%b{tan}%c{black}\u2081');
-      this.display.drawText(8, display.height - 2, '%b{tan}%c{black}\u2080');
-      this.display.drawText(10.5, display.height - 2, '%b{tan}%c{black}e');
-      this.display.drawText(10.5, display.height - 2, '%b{tan}%c{black}\u2081');
-      this.display.drawText(13.5, display.height - 2, '%b{tan}%c{black}o');
-      this.display.drawText(13.5, display.height - 2, '%b{tan}%c{black}\u2081');
-      this.display.drawText(16.25, display.height - 2, '%b{tan}%c{black}q');
-      this.display.drawText(16.25, display.height - 2, '%b{tan}%c{black}\u2081');
-      this.display.drawText(17, display.height - 2, '%b{tan}%c{black}\u2080');
+      for (var i = 0; i < this.rack_size; i++)
+        this.clearRackSpace(this.display, 1.5 + 3 * i, display.height - 2);
+      for (var i = 0; i < this.rack.length; i++)
+        this.drawRackTile(
+            this.display, 1.5 + 3 * i, display.height - 2, this.rack[i], 'tan');
 
       var left = 21;
       for (var dx = left; dx < display.width; dx++) {
@@ -253,13 +246,16 @@ var Game = {
         this.display.draw(dx, display.height - 1, glyph, "gray");
       }
 
+      this.clearRackSpace(this.display, 22.5, display.height - 2);
       var playerKey = this.player._x + ',' + this.player._y;
       if (this.map[playerKey].corpse != null)
         this.drawRackTile(
             this.display, 22.5, display.height - 2, this.map[playerKey].corpse, 'gray');
-      else
-        for (var i = 0; i < 3; i++)
-          this.display.draw(22 + i, display.height - 2, '');
+    },
+
+    clearRackSpace: function(display, x, y) {
+      for (var i = 0; i < 3; i++)
+        this.display.draw(x - 0.5 + i, y, '');
     },
 
     rackTileText: function(glyph, color) {
@@ -382,6 +378,12 @@ Player.prototype.handleEvent = function(e) {
     else {
       this._x = newX;
       this._y = newY;
+      var key = this._x + ',' + this._y;
+      if (Game.map[key].corpse != null && Game.rack.length < Game.rack_size) {
+        Game.rack.push(Game.map[key].corpse);
+        Game.map[key].corpse = null;
+        Game.message('You take the ant corpse.');
+      }
       Game.revealFrom({x: this._x, y: this._y});
     }
     Game._drawWholeMap();
