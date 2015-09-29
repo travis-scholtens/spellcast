@@ -233,10 +233,10 @@ var Game = {
         this.display.draw(dx, display.height - 1, glyph, "tan");
       }
       for (var i = 0; i < this.rack_size; i++)
-        this.clearRackSpace(this.display, 1.5 + 3 * i, display.height - 2);
+        this.clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
       for (var i = 0; i < this.rack.length; i++)
         this.drawRackTile(
-            this.display, 1.5 + 3 * i, display.height - 2, this.rack[i], 'tan');
+            this.display, 2 + 3 * i, display.height - 2, this.rack[i], 'tan');
 
       var left = 21;
       for (var dx = left; dx < display.width; dx++) {
@@ -246,16 +246,16 @@ var Game = {
         this.display.draw(dx, display.height - 1, glyph, "gray");
       }
 
-      this.clearRackSpace(this.display, 22.5, display.height - 2);
+      this.clearRackSpace(this.display, 23, display.height - 2);
       var playerKey = this.player._x + ',' + this.player._y;
       if (this.map[playerKey].corpse != null)
         this.drawRackTile(
-            this.display, 22.5, display.height - 2, this.map[playerKey].corpse, 'gray');
+            this.display, 23, display.height - 2, this.map[playerKey].corpse, 'gray');
     },
 
     clearRackSpace: function(display, x, y) {
       for (var i = 0; i < 3; i++)
-        this.display.draw(x - 0.5 + i, y, '');
+        this.display.draw(x - 1 + i, y, '');
     },
 
     rackTileText: function(glyph, color) {
@@ -267,10 +267,10 @@ var Game = {
           ax,
           digits;
       if (value < 10) {
-        ax = x;
+        ax = x - 0.5;
         digits = [value];
       } else {
-        ax = x - 0.25;
+        ax = x - 0.75;
         digits = [Math.floor(value/10), value % 10];
       }
       display.drawText(ax, y, this.rackTileText(glyph, color));
@@ -302,6 +302,8 @@ Player.prototype.getY = function() { return this._y; }
 Player.prototype.act = function() {
     Game.engine.lock();
     window.addEventListener("keydown", this);
+    window.addEventListener("mouseup", this);
+    window.addEventListener("touchstart", this);
 }
 
 Player.prototype.attack = function(foe) {
@@ -334,8 +336,7 @@ dropCorpse = function(map, x, y, corpse) {
   }
 }
     
-Player.prototype.handleEvent = function(e) {
-    var code = e.keyCode;
+Player.prototype.keyPress = function(code) {
     if (code == 13 || code == 32) {
         this._checkBox();
         return;
@@ -386,9 +387,47 @@ Player.prototype.handleEvent = function(e) {
       }
       Game.revealFrom({x: this._x, y: this._y});
     }
-    Game._drawWholeMap();
     window.removeEventListener("keydown", this);
+    window.removeEventListener("mouseup", this);
+    window.removeEventListener("touchstart", this);
     Game.engine.unlock();
+}
+
+Player.prototype.click = function(loc) {
+  console.log('clicked', loc);
+}
+
+ROT.Display.prototype.eventToClientPosition = function(e) {
+  if (e.touches) {
+    var x = e.touches[0].clientX;
+    var y = e.touches[0].clientY;
+  } else {
+    var x = e.clientX;
+    var y = e.clientY;
+  }
+
+  var rect = this._context.canvas.getBoundingClientRect();
+  x -= rect.left;
+  y -= rect.top;
+
+  x *= this._context.canvas.width / this._context.canvas.clientWidth;
+  y *= this._context.canvas.height / this._context.canvas.clientHeight;
+
+  if (x < 0 || y < 0 || x >= this._context.canvas.width || y >= this._context.canvas.height)
+    return [-1, -1];
+
+  return this._backend.eventToPosition(x, y);
+}
+
+Player.prototype.handleEvent = function(e) {
+  if (e.type == 'keydown')
+    this.keyPress(e.keyCode);
+  else if (e.type == 'touchstart') {
+    var coords = Game.display.eventToClientPosition(e);
+    if (coords[0] >= 0 && coords[1] >= 0)
+      this.click({x: coords[0], y: coords[1]});
+  }
+  Game._drawWholeMap();
 }
 
 Player.prototype._checkBox = function() {
