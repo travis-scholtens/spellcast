@@ -336,6 +336,7 @@ var Tile = function(glyph) {
 var Player = function(x, y) {
     this._x = x;
     this._y = y;
+    this.lastClickEvent = 0;
 }
     
 Player.prototype.getX = function() { return this._x; }
@@ -525,6 +526,10 @@ Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
     this.keyPress(e.keyCode);
   else {
+    var now = new Date().getTime();
+    if (now - this.lastClickEvent < 1000)
+      return;
+    this.lastClickEvent = now;
     var coords = Game.display.eventToClientPosition(e);
     if (coords[0] >= 0 && coords[1] >= 0)
       this.click({x: coords[0], y: coords[1]});
