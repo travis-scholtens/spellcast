@@ -496,11 +496,15 @@ Player.prototype.clickRackTile = function(index) {
                   dropCorpse(Game.map, Game.player._x, Game.player._y, tiles[0].glyph);
                   Game.message('You drop the ant corpse.');
                 } else {
-                  var spell = '';
-                  for (var j = 0; j < tiles.length; j++)
+                  var spell = '', score = 0;
+                  for (var j = 0; j < tiles.length; j++) {
                     spell += tiles[j].glyph;
+                    score += Game.values[tiles[j].glyph];
+                  }
+                  if (spell.length == 7)
+                    score += 50;
                   if (spell in words)
-                    Game.message('You cast ' + spell.toUpperCase() + '.');
+                    Game.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
                   else
                     Game.message('Nothing happens.');
                 }
