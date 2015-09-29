@@ -138,6 +138,10 @@ var Game = {
       var origin = {
           x: (display.width - xmax)/2,
           y: (display.height - ymax)/2 };
+      var result = {
+          center: {
+              x: origin.x + xmax/2,
+              y: origin.y + ymax/2 } };
       for (var x = 0; x < xmax; x++)
         for (var y = 0; y < ymax; y++) {
           var glyph = x == 0 ? (y == 0 ? '\u256d' :
@@ -163,6 +167,9 @@ var Game = {
                             origin.y + y,
                             glyph);
         }
+      result.closeButton = [{
+          x: origin.x + 1,
+          y: origin.y + 1 }];
       if (button !== undefined) {
         for (x = 0; x < button.length + 2; x++)
           for (y = 0; y < 3; y++) {
@@ -181,10 +188,12 @@ var Game = {
         this.display.drawText(origin.x + xmax/2 - button.length/2,
                               origin.y + ymax - 3,
                               button);
+        result.actButton = [];
+        for (x = 0; x < button.length; x++)
+          result.actButton.push({x: origin.x + xmax/2 - button.length/2 + x,
+                                 y: origin.y + ymax - 3});
       }
-      return {
-          x: origin.x + xmax/2,
-          y: origin.y + ymax/2 };
+      return result;
     },
 
     revealFrom: function(loc) {
@@ -429,7 +438,7 @@ Player.prototype.keyPress = function(code) {
 }
 
 Player.prototype.clickRackTile = function(index) {
-  var center,
+  var result,
       glyph = null,
       color,
       button = undefined,
@@ -453,15 +462,37 @@ Player.prototype.clickRackTile = function(index) {
     }
   }
   if (glyph != null) {
-    center = Game.modal({x: width, y: height}, button);
-    Game.drawRackTile(Game.display, center.x - (width-8)/4, center.y - height/4, glyph, color);
+    result = Game.modal({x: width, y: height}, button);
+    Game.drawRackTile(Game.display, result.center.x - (width-8)/4, result.center.y - height/4, glyph, color);
     Game.drawRackTiles();
-    Game.mode.push(true);
+    Game.mode.push(function(index, glyph, closeButton, actButton) {
+        return function(loc) {
+          var clicked = false;
+          for (var i = 0; i < closeButton.length; i++)
+            if (loc.x == closeButton[i].x && loc.y == closeButton[i].y) {
+              if (index == 6)
+                Game.map[Game.player._x + ',' + Game.player._y].corpse = glyph;
+              else
+                Game.rack.push(glyph);
+              clicked = true;
+            }
+          if (!clicked && actButton !== undefined)
+            for (var i = 0; i < actButton.length; i++)
+              if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
+                dropCorpse(Game.map, Game.player._x, Game.player._y, glyph);
+                Game.message('You drop the ant corpse.');
+                clicked = true;
+              }
+          if (clicked)
+            Game.mode.pop();
+        }; }(index, glyph, result.closeButton, result.actButton));
   }
 }
 
 Player.prototype.click = function(loc) {
-  if (Game.mode.length == 0 && loc.y == 24) {
+  if (Game.mode.length > 0)
+    Game.mode[Game.mode.length-1](loc);
+  else if (loc.y == 24) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
       this.clickRackTile(rackTileIndex);
