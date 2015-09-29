@@ -337,6 +337,7 @@ var Player = function(x, y) {
     this._x = x;
     this._y = y;
     this.lastClickEvent = 0;
+    this.modalTiles = [];
 }
     
 Player.prototype.getX = function() { return this._x; }
@@ -440,64 +441,79 @@ Player.prototype.keyPress = function(code) {
 
 Player.prototype.clickRackTile = function(index) {
   var result,
-      glyph = null,
-      color,
-      button = undefined,
-      width = 8,
-      height = 4;
+      button,
+      width,
+      height;
   if (index < Game.rack.length) {
     var remaining = Game.rack.splice(index);
-    glyph = remaining.shift();
+    this.modalTiles.push({glyph: remaining.shift(), fromRack: true, color: 'tan'});
     Game.rack = Game.rack.concat(remaining);
-    color = 'tan';
-    button = 'Drop';
-    width = 12;
-    height = 8;
   } else if (index == 6) {
     var key = Game.player._x + ',' + Game.player._y
-    glyph = Game.map[key].corpse;
-    height = 4;
+    var glyph = Game.map[key].corpse;
     if (glyph != null) {
+      this.modalTiles.push({glyph: glyph, fromRack: false, color: 'gray'});
       Game.map[key].corpse = null;
-      color = 'gray';
     }
   }
-  if (glyph != null) {
+  if (this.modalTiles.length > 0) {
+    button = this.modalTiles.length > 1 ? 'Cast' :
+             this.modalTiles[0].fromRack ? 'Drop' :
+             undefined;
+    width = button !== undefined ? 9 + 3 * this.modalTiles.length : 8;
+    height = button !== undefined ? 8 : 4;
     result = Game.modal({x: width, y: height}, button);
-    Game.drawRackTile(Game.display, result.center.x - (width-8)/4, result.center.y - height/4, glyph, color);
+    for (var i = 0; i < this.modalTiles.length; i++)
+      Game.drawRackTile(
+          Game.display, result.center.x - (width-8)/4 + 3 * i, result.center.y - height/4,
+          this.modalTiles[i].glyph, this.modalTiles[i].color);
     Game.drawRackTiles();
-    Game.mode.push(function(index, glyph, closeButton, actButton) {
+    if (Game.mode.length > 0)
+      Game.mode.pop();
+    Game.mode.push(function(index, tiles, closeButton, actButton) {
         return function(loc) {
           var clicked = false;
           for (var i = 0; i < closeButton.length; i++)
             if (loc.x == closeButton[i].x && loc.y == closeButton[i].y) {
-              if (index == 6)
-                Game.map[Game.player._x + ',' + Game.player._y].corpse = glyph;
-              else
-                Game.rack.push(glyph);
+              for (var j = 0; j < tiles.length; j++) {
+                if (tiles[j].fromRack)
+                  Game.rack.push(tiles[j].glyph);
+                else
+                  Game.map[Game.player._x + ',' + Game.player._y].corpse = tiles[j].glyph;
+              }
+              tiles.length = 0;
               clicked = true;
+              break;
             }
           if (!clicked && actButton !== undefined)
             for (var i = 0; i < actButton.length; i++)
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
-                dropCorpse(Game.map, Game.player._x, Game.player._y, glyph);
-                Game.message('You drop the ant corpse.');
+                if (tiles.length == 1) {
+                  dropCorpse(Game.map, Game.player._x, Game.player._y, tiles[0].glyph);
+                  Game.message('You drop the ant corpse.');
+                } else {
+                  var spell = '';
+                  for (var j = 0; j < tiles.length; j++)
+                    spell += tiles[j].glyph.toUpperCase();
+                  Game.message('You cast the spell ' + spell);
+                }
+                tiles.length = 0;
                 clicked = true;
+                break;
               }
           if (clicked)
             Game.mode.pop();
-        }; }(index, glyph, result.closeButton, result.actButton));
+        }; }(index, this.modalTiles, result.closeButton, result.actButton));
   }
 }
 
 Player.prototype.click = function(loc) {
-  if (Game.mode.length > 0)
-    Game.mode[Game.mode.length-1](loc);
-  else if (loc.y == 24) {
+  if (loc.y == 24) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
       this.clickRackTile(rackTileIndex);
-  }
+  } else if (Game.mode.length > 0)
+    Game.mode[Game.mode.length-1](loc);
 }
 
 ROT.Display.prototype.eventToClientPosition = function(e) {
