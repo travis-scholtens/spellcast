@@ -5,6 +5,35 @@ var Game = {
     player: null,
     ananas: null,
     messages: [],
+
+    values: {
+      a: 1,
+      b: 3,
+      c: 3,
+      d: 2,
+      e: 1,
+      f: 4,
+      g: 2,
+      h: 4,
+      i: 1,
+      j: 8,
+      k: 5,
+      l: 1,
+      m: 3,
+      n: 1,
+      o: 1,
+      p: 3,
+      q: 10,
+      r: 1,
+      s: 1,
+      t: 1,
+      u: 1,
+      v: 4,
+      w: 4,
+      x: 8,
+      y: 4,
+      z: 10
+    },
     
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
@@ -194,9 +223,35 @@ var Game = {
                     '\u2500';
         this.display.draw(dx, display.height - 1, glyph, "gray");
       }
-      this.display.drawText(22.25, display.height - 2, '%b{gray}%c{black}q');
-      this.display.drawText(22.25, display.height - 2, '%b{gray}%c{black}\u2081');
-      this.display.drawText(23, display.height - 2, '%b{gray}%c{black}\u2080');
+
+      var playerKey = this.player._x + ',' + this.player._y;
+      if (this.map[playerKey].corpse != null)
+        this.drawRackTile(
+            this.display, 22.5, display.height - 2, this.map[playerKey].corpse, 'gray');
+      else
+        for (var i = 0; i < 3; i++)
+          this.display.draw(22 + i, display.height - 2, '');
+    },
+
+    rackTileText: function(glyph, color) {
+      return '%b{' + color + '}%c{black}' + glyph;
+    },
+
+    drawRackTile: function(display, x, y, glyph, color) {
+      var value = this.values[glyph],
+          ax,
+          digits;
+      if (value < 10) {
+        ax = x;
+        digits = [value];
+      } else {
+        ax = x - 0.25;
+        digits = [Math.floor(value/10), value % 10];
+      }
+      display.drawText(ax, y, this.rackTileText(glyph, color));
+      for (var i = 0; i < digits.length; i++)
+        display.drawText(ax + 0.75 * i, y,
+            this.rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
     },
 
     message: function(text) {
