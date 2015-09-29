@@ -12,7 +12,6 @@ var Game = {
     map: {},
     engine: null,
     player: null,
-    ananas: null,
     messages: [],
     rack: [],
     rack_size: 6,
@@ -90,8 +89,6 @@ var Game = {
           return (x + ',' + y) in this.map;
         }.bind(this));
         
-        this._generateBoxes(freeCells);
-
         var rooms = digger.getRooms();
         var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
         var downRoom = upRoom;
@@ -197,15 +194,6 @@ var Game = {
         var being = new what(kind, x, y);
         this.map[key].contents = being;
         return being;
-    },
-    
-    _generateBoxes: function(freeCells) {
-        for (var i=0;i<10;i++) {
-            var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
-            var key = freeCells.splice(index, 1)[0];
-            this.map[key].glyph = "*";
-            if (!i) { this.ananas = key; } /* first box contains an ananas */
-        }
     },
 
     _drawWholeMap: function() {
@@ -366,11 +354,6 @@ dropCorpse = function(map, x, y, corpse) {
     
 Player.prototype.keyPress = function(code) {
     if (Game.mode.length > 0) return;
-
-    if (code == 13 || code == 32) {
-        this._checkBox();
-        return;
-    }
 
     var keyMap = {};
     keyMap[38] = 0;
@@ -547,19 +530,6 @@ Player.prototype.handleEvent = function(e) {
   }
   if (Game.mode.length == 0)
     Game._drawWholeMap();
-}
-
-Player.prototype._checkBox = function() {
-    var key = this._x + "," + this._y;
-    if (Game.map[key].glyph != "*") {
-        alert("There is no box here!");
-    } else if (key == Game.ananas) {
-        alert("Hooray! You found an ananas and won this game.");
-        Game.engine.lock();
-        window.removeEventListener("keydown", this);
-    } else {
-        alert("This box is empty :-(");
-    }
 }
     
 var Pedro = function(kind, x, y) {
