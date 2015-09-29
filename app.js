@@ -498,8 +498,11 @@ Player.prototype.clickRackTile = function(index) {
                 } else {
                   var spell = '';
                   for (var j = 0; j < tiles.length; j++)
-                    spell += tiles[j].glyph.toUpperCase();
-                  Game.message('You cast the spell ' + spell);
+                    spell += tiles[j].glyph;
+                  if (spell in words)
+                    Game.message('You cast ' + spell.toUpperCase() + '.');
+                  else
+                    Game.message('Nothing happens.');
                 }
                 tiles.length = 0;
                 clicked = true;
