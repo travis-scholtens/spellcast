@@ -1,3 +1,12 @@
+var FoeKind = function(glyph, name, color, health, value, frequency) {
+  this.glyph = glyph;
+  this.name = name;
+  this.color = color;
+  this.health = health;
+  this.value = value;
+  this.frequency = frequency;
+};
+
 var Game = {
     display: null,
     map: {},
@@ -10,63 +19,34 @@ var Game = {
     rackTileLocations: {},
     mode: [],
 
-    values: {
-      a: 1,
-      b: 3,
-      c: 3,
-      d: 2,
-      e: 1,
-      f: 4,
-      g: 2,
-      h: 4,
-      i: 1,
-      j: 8,
-      k: 5,
-      l: 1,
-      m: 3,
-      n: 1,
-      o: 1,
-      p: 3,
-      q: 10,
-      r: 1,
-      s: 1,
-      t: 1,
-      u: 1,
-      v: 4,
-      w: 4,
-      x: 8,
-      y: 4,
-      z: 10
-    },
-    
-    frequencies: {
-      a: 9,
-      b: 2,
-      c: 2,
-      d: 4,
-      e: 12,
-      f: 2,
-      g: 3,
-      h: 2,
-      i: 9,
-      j: 1,
-      k: 1,
-      l: 4,
-      m: 2,
-      n: 6,
-      o: 8,
-      p: 2,
-      q: 1,
-      r: 6,
-      s: 4,
-      t: 6,
-      u: 4,
-      v: 2,
-      w: 2,
-      x: 1,
-      y: 2,
-      z: 1
-    },
+    foeKinds: [
+      new FoeKind('a', 'ant', 'darkred', 10, 1, 9),
+      new FoeKind('b', 'badger', 'brown', 12, 3, 2),
+      new FoeKind('c', 'crawler', 'yellow', 15, 3, 2),
+      new FoeKind('d', 'demon', 'red', 20, 2, 4),
+      new FoeKind('e', 'elf', 'green', 15, 1, 12),
+      new FoeKind('f', 'fury', 'darkblue', 20, 4, 2),
+      new FoeKind('g', 'goblin', 'darkgreen', 25, 2, 3),
+      new FoeKind('h', 'hag', 'darkgray', 20, 4, 2),
+      new FoeKind('i', 'imp', 'lightblue', 10, 1, 9),
+      new FoeKind('j', 'jabber', 'darkbrown', 40, 8, 1),
+      new FoeKind('k', 'koala', 'lightgray', 20, 5, 1),
+      new FoeKind('l', 'lemur', 'orange', 20, 1, 4),
+      new FoeKind('m', 'manticore', 'darkorange', 50, 3, 2),
+      new FoeKind('n', '?', 'white', 0, 0, 0),
+      new FoeKind('o', '?', 'white', 0, 0, 0),
+      new FoeKind('p', '?', 'white', 0, 0, 0),
+      new FoeKind('q', '?', 'white', 0, 0, 0),
+      new FoeKind('r', '?', 'white', 0, 0, 0),
+      new FoeKind('s', '?', 'white', 0, 0, 0),
+      new FoeKind('t', '?', 'white', 0, 0, 0),
+      new FoeKind('u', '?', 'white', 0, 0, 0),
+      new FoeKind('v', '?', 'white', 0, 0, 0),
+      new FoeKind('w', '?', 'white', 0, 0, 0),
+      new FoeKind('x', '?', 'white', 0, 0, 0),
+      new FoeKind('y', '?', 'white', 0, 0, 0),
+      new FoeKind('z', '?', 'white', 0, 0, 0),
+    ],
 
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
@@ -74,6 +54,10 @@ var Game = {
         canvas.style.width = '100%';
         canvas.style.height = '100%';
         document.getElementById("main").appendChild(canvas);
+
+        this.values = {};
+        for (var i = 0; i < this.foeKinds.length; i++)
+          this.values[this.foeKinds[i].glyph] = this.foeKinds[i].value;
         
         this._generateMap();
         
@@ -119,13 +103,13 @@ var Game = {
         this.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
         this.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
 
-        this.player = this._createBeing(Player, freeCells);
+        this.player = this._createBeing(Player, null, freeCells);
         this.player._x = upCenter[0] + 1;
         this.player._y = upCenter[1];
 
         this.foes = [];
         for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++)
-          this.foes.push(this._createBeing(Pedro, freeCells));
+          this.foes.push(this._createBeing(Pedro, this.foeKinds[0], freeCells));
 
         this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
@@ -204,13 +188,13 @@ var Game = {
       }.bind(this));
     },
     
-    _createBeing: function(what, freeCells) {
+    _createBeing: function(what, kind, freeCells) {
         var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
         var key = freeCells.splice(index, 1)[0];
         var parts = key.split(",");
         var x = parseInt(parts[0]);
         var y = parseInt(parts[1]);
-        var being = new what(x, y);
+        var being = new what(kind, x, y);
         this.map[key].contents = being;
         return being;
     },
@@ -243,8 +227,8 @@ var Game = {
               var glyph = '', color = 'white';
               if (tile != undefined && tile.revealed) {
                 if (tile.contents != null) {
-                  glyph = tile.contents.glyph;
-                  color = tile.contents.color;
+                  glyph = tile.contents.kind.glyph;
+                  color = tile.contents.kind.color;
                 } else if (tile.corpse != null) {
                   glyph = tile.corpse;
                   color = 'darkgray';
@@ -333,7 +317,7 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(x, y) {
+var Player = function(_, x, y) {
     this._x = x;
     this._y = y;
     this.lastClickEvent = 0;
@@ -413,7 +397,7 @@ Player.prototype.keyPress = function(code) {
       var damage = this.attack(contents);
       if (contents.health == 0) {
         Game.map[newKey].contents = null;
-        dropCorpse(Game.map, newX, newY, contents.glyph);
+        dropCorpse(Game.map, newX, newY, contents.kind.glyph);
         Game.scheduler.remove(contents);
         Game.message('You kill the ant!');
       }
@@ -578,12 +562,11 @@ Player.prototype._checkBox = function() {
     }
 }
     
-var Pedro = function(x, y) {
+var Pedro = function(kind, x, y) {
     this._x = x;
     this._y = y;
-    this.glyph = 'a';
-    this.health = 10;
-    this.color = 'red';
+    this.kind = kind;
+    this.health = kind.health;
 }
     
 Pedro.prototype.act = function() {
