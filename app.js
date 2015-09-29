@@ -7,6 +7,8 @@ var Game = {
     messages: [],
     rack: [],
     rack_size: 6,
+    rackTileLocations: {},
+    mode: [],
 
     values: {
       a: 1,
@@ -127,13 +129,15 @@ var Game = {
 
         this.revealFrom({x: this.player._x, y: this.player._y});
         this._drawWholeMap();
-        this.modal({x: 16, y: 6});
     },
 
     modal: function(size) {
       var display = this.display.getOptions();
       var xmax = size.x,
           ymax = size.y;
+      var origin = {
+          x: (display.width - xmax)/2,
+          y: (display.height - ymax)/2 };
       for (var x = 0; x < xmax; x++)
         for (var y = 0; y < ymax; y++) {
           var glyph = x == 0 ? (y == 0 ? '\u256d' :
@@ -155,10 +159,13 @@ var Game = {
                                        '\u2502') :
                       y == 0 || y == ymax  - 1 ? '\u2500' :
                       '';
-          this.display.draw((display.width - xmax)/2 + x,
-                            (display.height - ymax)/2 + y,
+          this.display.draw(origin.x + x,
+                            origin.y + y,
                             glyph);
         }
+      return {
+          x: origin.x + xmax/2,
+          y: origin.y + ymax/2 };
     },
 
     revealFrom: function(loc) {
@@ -188,7 +195,7 @@ var Game = {
             if (!i) { this.ananas = key; } /* first box contains an ananas */
         }
     },
-    
+
     _drawWholeMap: function() {
       var display = this.display.getOptions();
       var messageCount = this.messages.length;
@@ -220,11 +227,11 @@ var Game = {
             }
           }
         }
-      // bottom rack:
-      //  _  _  _  _  _  _  _
-      //
-      // 0....5....1....1....2.
-      //           0    5    0
+      this.drawRackTiles();
+    },
+
+    drawRackTiles: function() {
+      var display = this.display.getOptions();
       var right = 20;
       for (var dx = 0; dx < right; dx++) {
         var glyph = dx == 0 ? '\u2514' :
@@ -232,11 +239,15 @@ var Game = {
                     '\u2500';
         this.display.draw(dx, display.height - 1, glyph, "tan");
       }
+      this.rackTileLocations.length = 0;
       for (var i = 0; i < this.rack_size; i++)
         this.clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
-      for (var i = 0; i < this.rack.length; i++)
+      for (var i = 0; i < this.rack.length; i++) {
         this.drawRackTile(
             this.display, 2 + 3 * i, display.height - 2, this.rack[i], 'tan');
+        for (var j = 0; j < 2; j++)
+          this.rackTileLocations[2 + 3 * i + j] = i;
+      }
 
       var left = 21;
       for (var dx = left; dx < display.width; dx++) {
@@ -248,9 +259,12 @@ var Game = {
 
       this.clearRackSpace(this.display, 23, display.height - 2);
       var playerKey = this.player._x + ',' + this.player._y;
-      if (this.map[playerKey].corpse != null)
+      if (this.map[playerKey].corpse != null) {
         this.drawRackTile(
             this.display, 23, display.height - 2, this.map[playerKey].corpse, 'gray');
+        for (var j = 0; j < 2; j++)
+          this.rackTileLocations[23 + j] = 6;
+      }
     },
 
     clearRackSpace: function(display, x, y) {
@@ -337,6 +351,8 @@ dropCorpse = function(map, x, y, corpse) {
 }
     
 Player.prototype.keyPress = function(code) {
+    if (Game.mode.length > 0) return;
+
     if (code == 13 || code == 32) {
         this._checkBox();
         return;
@@ -393,8 +409,37 @@ Player.prototype.keyPress = function(code) {
     Game.engine.unlock();
 }
 
+Player.prototype.clickRackTile = function(index) {
+  var center,
+      glyph = null,
+      color;
+  if (index < Game.rack.length) {
+    var remaining = Game.rack.splice(index);
+    glyph = remaining.shift();
+    Game.rack = Game.rack.concat(remaining);
+    color = 'tan';
+  } else if (index == 6) {
+    var key = Game.player._x + ',' + Game.player._y
+    glyph = Game.map[key].corpse;
+    if (glyph != null) {
+      Game.map[key].corpse = null;
+      color = 'gray';
+    }
+  }
+  if (glyph != null) {
+    center = Game.modal({x: 16, y: 6});
+    Game.drawRackTile(Game.display, center.x - 1, center.y, glyph, color);
+    Game.drawRackTiles();
+    Game.mode.push(true);
+  }
+}
+
 Player.prototype.click = function(loc) {
-  console.log('clicked', loc);
+  if (Game.mode.length == 0 && loc.y == 24) {
+    var rackTileIndex = Game.rackTileLocations[loc.x];
+    if (rackTileIndex !== undefined)
+      this.clickRackTile(rackTileIndex);
+  }
 }
 
 ROT.Display.prototype.eventToClientPosition = function(e) {
@@ -427,7 +472,8 @@ Player.prototype.handleEvent = function(e) {
     if (coords[0] >= 0 && coords[1] >= 0)
       this.click({x: coords[0], y: coords[1]});
   }
-  Game._drawWholeMap();
+  if (Game.mode.length == 0)
+    Game._drawWholeMap();
 }
 
 Player.prototype._checkBox = function() {
