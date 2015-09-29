@@ -131,7 +131,7 @@ var Game = {
         this._drawWholeMap();
     },
 
-    modal: function(size) {
+    modal: function(size, button) {
       var display = this.display.getOptions();
       var xmax = size.x,
           ymax = size.y;
@@ -163,6 +163,25 @@ var Game = {
                             origin.y + y,
                             glyph);
         }
+      if (button !== undefined) {
+        for (x = 0; x < button.length + 2; x++)
+          for (y = 0; y < 3; y++) {
+            glyph = x == 0 ? (y == 0 ? '\u256d' :
+                              y == 2 ? '\u2570' :
+                              '\u2502') :
+                    x == button.length + 1 ? (y == 0 ? '\u256e' :
+                                              y == 2 ? '\u256f' :
+                                              '\u2502') :
+                    y == 0 || y == 2 ? '\u2500' :
+                    '';
+            this.display.draw(origin.x + xmax/2 - button.length/2 + x - 1,
+                              origin.y + ymax - 4 + y,
+                              glyph);
+          }
+        this.display.drawText(origin.x + xmax/2 - button.length/2,
+                              origin.y + ymax - 3,
+                              button);
+      }
       return {
           x: origin.x + xmax/2,
           y: origin.y + ymax/2 };
@@ -412,23 +431,30 @@ Player.prototype.keyPress = function(code) {
 Player.prototype.clickRackTile = function(index) {
   var center,
       glyph = null,
-      color;
+      color,
+      button = undefined,
+      width = 8,
+      height = 4;
   if (index < Game.rack.length) {
     var remaining = Game.rack.splice(index);
     glyph = remaining.shift();
     Game.rack = Game.rack.concat(remaining);
     color = 'tan';
+    button = 'Drop';
+    width = 12;
+    height = 8;
   } else if (index == 6) {
     var key = Game.player._x + ',' + Game.player._y
     glyph = Game.map[key].corpse;
+    height = 4;
     if (glyph != null) {
       Game.map[key].corpse = null;
       color = 'gray';
     }
   }
   if (glyph != null) {
-    center = Game.modal({x: 16, y: 6});
-    Game.drawRackTile(Game.display, center.x - 1, center.y, glyph, color);
+    center = Game.modal({x: width, y: height}, button);
+    Game.drawRackTile(Game.display, center.x - (width-8)/4, center.y - height/4, glyph, color);
     Game.drawRackTiles();
     Game.mode.push(true);
   }
