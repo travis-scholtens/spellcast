@@ -460,13 +460,17 @@ Player.prototype.clickRackTile = function(index) {
     button = this.modalTiles.length > 1 ? 'Cast' :
              this.modalTiles[0].fromRack ? 'Drop' :
              undefined;
-    width = button !== undefined ? 9 + 3 * this.modalTiles.length : 8;
+    width = button !== undefined ? Math.min(26, Math.max(12, 6 + 3 * this.modalTiles.length)) : 8;
     height = button !== undefined ? 8 : 4;
     result = Game.modal({x: width, y: height}, button);
-    for (var i = 0; i < this.modalTiles.length; i++)
+    for (var i = 0; i < this.modalTiles.length; i++) {
+      var padding = this.modalTiles.length == 1 ? 2 : 1;
       Game.drawRackTile(
-          Game.display, result.center.x - (width-8)/4 + 3 * i, result.center.y - height/4,
+          Game.display,
+          result.center.x - width/2 + 3 * (this.modalTiles.length - i) + padding,
+          result.center.y - height/4,
           this.modalTiles[i].glyph, this.modalTiles[i].color);
+    }
     Game.drawRackTiles();
     if (Game.mode.length > 0)
       Game.mode.pop();
