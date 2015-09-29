@@ -422,7 +422,7 @@ ROT.Display.prototype.eventToClientPosition = function(e) {
 Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
     this.keyPress(e.keyCode);
-  else if (e.type == 'touchstart') {
+  else {
     var coords = Game.display.eventToClientPosition(e);
     if (coords[0] >= 0 && coords[1] >= 0)
       this.click({x: coords[0], y: coords[1]});
