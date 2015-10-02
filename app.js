@@ -59,6 +59,7 @@ var Game = {
           this.values[this.foeKinds[i].glyph] = this.foeKinds[i].value;
         
         this.levels.push(this._generateMap());
+        this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
         this.revealFrom(this.levels[0], {x: this.player._x, y: this.player._y});
         this._drawWholeMap(this.levels[0]);
         
@@ -101,10 +102,8 @@ var Game = {
 
         var upCenter = rooms[upRoom].getCenter(),
             downCenter = rooms[downRoom].getCenter();
-        level.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
-        level.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
-
-        this.player = new Player(level, upCenter[0] + 1, upCenter[1]);
+        level.up = {x: upCenter[0] - 1, y: upCenter[1]};
+        level.down = {x: downCenter[0], y: downCenter[1]};
 
         level.foes = [];
         for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
@@ -223,7 +222,11 @@ var Game = {
                 } else if (tile.corpse != null) {
                   glyph = tile.corpse;
                   color = 'darkgray';
-                } else
+                } else if (x == level.up.x && y == level.up.y)
+                  glyph = '\u261d';
+                else if (x == level.down.x && y == level.down.y)
+                  glyph = '\u261f';
+                else
                   glyph = tile.glyph;
               }
               this.display.draw(dx, dy, glyph, color);
