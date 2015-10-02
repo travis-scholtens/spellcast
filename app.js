@@ -7,6 +7,15 @@ var FoeKind = function(glyph, name, color, health, value, frequency) {
   this.frequency = frequency;
 };
 
+var foeDistribution = function(kinds, depth) {
+  var dist = {};
+  kinds.slice(0, depth).forEach(
+      function(k) {
+        this[k.glyph] = k.frequency;
+      }.bind(dist));
+  return dist;
+};
+
 var Game = {
     display: null,
     levels: [],
@@ -57,9 +66,15 @@ var Game = {
         this.values = {};
         for (var i = 0; i < this.foeKinds.length; i++)
           this.values[this.foeKinds[i].glyph] = this.foeKinds[i].value;
+
+        this.glyphKind = {};
+        this.foeKinds.forEach(
+            function(k) {
+              this[k.glyph] = k;
+            }.bind(this.glyphKind));
         
         for (var i = 0; i < 26; i++)
-          this.levels.push(this._generateMap());
+          this.levels.push(this._generateMap(i+1));
         this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
         this.revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
         this._drawWholeMap(this.player.level);
@@ -72,7 +87,7 @@ var Game = {
         this.engine.start();
     },
     
-    _generateMap: function() {
+    _generateMap: function(depth) {
         var level = {};
         level.width = 128;
         level.height = 128;
@@ -105,10 +120,11 @@ var Game = {
         level.up = {x: upCenter[0] - 1, y: upCenter[1]};
         level.down = {x: downCenter[0], y: downCenter[1]};
 
+        var kinds = foeDistribution(this.foeKinds, depth);
         level.foes = [];
         for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
           var loc = this.newBeingLocation(freeCells);
-          var foe = new Pedro(this.foeKinds[0], level, loc.x, loc.y);
+          var foe = new Pedro(this.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
           level.map[loc.x + ',' + loc.y].contents = foe;
           level.foes.push(foe);
         }
@@ -400,25 +416,27 @@ Player.prototype.keyPress = function(code, level) {
     var contents = level.map[newKey].contents;
     if (contents != null) {
       var damage = this.attack(contents);
+      var name = Game.glyphKind[contents.kind.glyph].name;
       if (contents.health == 0) {
         level.map[newKey].contents = null;
         dropCorpse(level.map, newX, newY, contents.kind.glyph);
         Game.scheduler.remove(contents);
-        Game.message('You kill the ant!');
+        Game.message('You kill the ' + name + '!');
       }
       else if (damage > 0)
-        Game.message('You hit the ant! %c{red}(-' + damage + ')');
+        Game.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
       else
-        Game.message('You miss the ant.');
+        Game.message('You miss the ' + name + '.');
     }
     else {
       this._x = newX;
       this._y = newY;
       var key = this._x + ',' + this._y;
       if (level.map[key].corpse != null && Game.rack.length < Game.rack_size) {
+        var name = Game.glyphKind[level.map[key].corpse].name;
         Game.rack.push(level.map[key].corpse);
         level.map[key].corpse = null;
-        Game.message('You take the ant corpse.');
+        Game.message('You take the ' + name + ' corpse.');
       }
       var stairLoc;
       if (this._x == level.down.x && this._y == level.down.y) {
@@ -497,8 +515,9 @@ Player.prototype.clickRackTile = function(index, map) {
             for (var i = 0; i < actButton.length; i++)
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
                 if (tiles.length == 1) {
+                  var name = Game.glyphKind[tiles[0].glyph].name;
                   dropCorpse(map, Game.player._x, Game.player._y, tiles[0].glyph);
-                  Game.message('You drop the ant corpse.');
+                  Game.message('You drop the ' + name + ' corpse.');
                 } else {
                   var spell = '', score = 0;
                   for (var j = 0; j < tiles.length; j++) {
@@ -597,7 +616,7 @@ Pedro.prototype.act = function() {
         x = path[0][0];
         y = path[0][1];
         if (x == Game.player._x && y == Game.player._y)
-          Game.message('The ant hits you!');
+          Game.message('The ' + this.kind.name + ' hits you!');
         else {
           if (this.level.map[x + ',' + y].contents != null)
             return;
