@@ -58,15 +58,15 @@ var Game = {
         for (var i = 0; i < this.foeKinds.length; i++)
           this.values[this.foeKinds[i].glyph] = this.foeKinds[i].value;
         
-        this.levels.push(this._generateMap());
+        for (var i = 0; i < 26; i++)
+          this.levels.push(this._generateMap());
         this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
-        this.revealFrom(this.levels[0], {x: this.player._x, y: this.player._y});
-        this._drawWholeMap(this.levels[0]);
+        this.revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
+        this._drawWholeMap(this.player.level);
         
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        for (var i = 0; i < this.levels[0].foes.length; i++)
-          this.scheduler.add(this.levels[0].foes[i], true);
+        this.schedule(this.player.level.foes);
 
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -114,6 +114,22 @@ var Game = {
         }
 
         return level;
+    },
+
+    schedule: function(foes) {
+      foes.forEach(function(f) { this.add(f, true); }.bind(this.scheduler));
+    },
+
+    unschedule: function(foes) {
+      foes.forEach(this.scheduler.remove.bind(this.scheduler));
+    },
+
+    levelBelow: function(level) {
+      return this.levels[Math.min(this.levels.length - 1, this.levels.indexOf(level) + 1)];
+    },
+
+    levelAbove: function(level) {
+      return this.levels[Math.max(0, this.levels.indexOf(level) - 1)];
     },
 
     modal: function(size, button) {
@@ -404,7 +420,22 @@ Player.prototype.keyPress = function(code, level) {
         level.map[key].corpse = null;
         Game.message('You take the ant corpse.');
       }
-      Game.revealFrom(level, {x: this._x, y: this._y});
+      var stairLoc;
+      if (this._x == level.down.x && this._y == level.down.y) {
+        this.level = Game.levelBelow(level);
+        stairLoc = this.level.up;
+      }
+      else if (this._x == level.up.x && this._y == level.up.y) {
+        this.level = Game.levelAbove(level);
+        stairLoc = this.level.down;
+      }
+      if (this.level != level) {
+        Game.unschedule(level.foes);
+        Game.schedule(this.level.foes);
+        this._x = stairLoc.x;
+        this._y = stairLoc.y;
+      }
+      Game.revealFrom(this.level, {x: this._x, y: this._y});
     }
     window.removeEventListener("keydown", this);
     window.removeEventListener("mouseup", this);
