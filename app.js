@@ -79,7 +79,7 @@ var Game = {
         this.revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
         this._drawWholeMap(this.player.level);
         
-        this.scheduler = new ROT.Scheduler.Simple();
+        this.scheduler = new ROT.Scheduler.Speed();
         this.scheduler.add(this.player, true);
         this.schedule(this.player.level.foes);
 
@@ -348,6 +348,18 @@ var Player = function(level, x, y) {
     this._y = y;
     this.lastClickEvent = 0;
     this.modalTiles = [];
+    this.experience = 0;
+}
+
+Player.prototype.getSpeed = function() {
+  return this.experience < 10 ? 75 :
+         this.experience < 20 ? 85 :
+         this.experience < 35 ? 95 :
+         this.experience < 55 ? 100 :
+         this.experience < 85 ? 105 :
+         this.experience < 130 ? 110 :
+         this.experience < 200 ? 115 :
+         120;
 }
     
 Player.prototype.getX = function() { return this._x; }
@@ -496,7 +508,7 @@ Player.prototype.clickRackTile = function(index, map) {
     Game.drawRackTiles();
     if (Game.mode.length > 0)
       Game.mode.pop();
-    Game.mode.push(function(index, tiles, closeButton, actButton) {
+    Game.mode.push(function(player, index, tiles, closeButton, actButton) {
         return function(loc) {
           var clicked = false;
           for (var i = 0; i < closeButton.length; i++)
@@ -526,8 +538,10 @@ Player.prototype.clickRackTile = function(index, map) {
                   }
                   if (spell.length == 7)
                     score += 50;
-                  if (spell in words)
+                  if (spell in words) {
+                    player.experience += score;
                     Game.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
+                  }
                   else
                     Game.message('Nothing happens.');
                 }
@@ -537,7 +551,7 @@ Player.prototype.clickRackTile = function(index, map) {
               }
           if (clicked)
             Game.mode.pop();
-        }; }(index, this.modalTiles, result.closeButton, result.actButton));
+        }; }(this, index, this.modalTiles, result.closeButton, result.actButton));
   }
 }
 
@@ -595,6 +609,8 @@ var Pedro = function(kind, level, x, y) {
     this.kind = kind;
     this.health = kind.health;
 }
+
+Pedro.prototype.getSpeed = function() { return 100; }
     
 Pedro.prototype.act = function() {
     var x = Game.player.getX();
