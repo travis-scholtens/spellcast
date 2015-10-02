@@ -60,7 +60,7 @@ var Game = {
         
         this.levels.push(this._generateMap());
         this.revealFrom(this.levels[0], {x: this.player._x, y: this.player._y});
-        this._drawWholeMap();
+        this._drawWholeMap(this.levels[0]);
         
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
@@ -104,12 +104,12 @@ var Game = {
         level.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
         level.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
 
-        this.player = new Player(upCenter[0] + 1, upCenter[1]);
+        this.player = new Player(level, upCenter[0] + 1, upCenter[1]);
 
         level.foes = [];
         for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
           var loc = this.newBeingLocation(freeCells);
-          var foe = new Pedro(this.foeKinds[0], loc.x, loc.y);
+          var foe = new Pedro(this.foeKinds[0], level, loc.x, loc.y);
           level.map[loc.x + ',' + loc.y].contents = foe;
           level.foes.push(foe);
         }
@@ -199,7 +199,7 @@ var Game = {
         return {x: x, y: y};
     },
 
-    _drawWholeMap: function() {
+    _drawWholeMap: function(level) {
       var display = this.display.getOptions();
       var messageCount = this.messages.length;
       for (var i = 0; i < messageCount; i++)
@@ -209,12 +209,12 @@ var Game = {
         for (var dy = messageCount; dy < display.height - 3; dy++) {
           var x = this.player.getX() - display.width/2 + dx,
               y = this.player.getY() - display.height/2 + dy;
-          if ((0 <= x && x < this.levels[0].width) &&
-              (0 <= y && y < this.levels[0].height)) {
+          if ((0 <= x && x < level.width) &&
+              (0 <= y && y < level.height)) {
             if (x == this.player._x && y == this.player._y)
               this.display.draw(dx, dy, '@', '#ff0');
             else {
-              var tile = this.levels[0].map[x + ',' + y];
+              var tile = level.map[x + ',' + y];
               var glyph = '', color = 'white';
               if (tile != undefined && tile.revealed) {
                 if (tile.contents != null) {
@@ -230,10 +230,10 @@ var Game = {
             }
           }
         }
-      this.drawRackTiles();
+      this.drawRackTiles(level.map[this.player._x + ',' + this.player._y].corpse);
     },
 
-    drawRackTiles: function() {
+    drawRackTiles: function(corpse) {
       var display = this.display.getOptions();
       var right = 20;
       for (var dx = 0; dx < right; dx++) {
@@ -261,10 +261,9 @@ var Game = {
       }
 
       this.clearRackSpace(this.display, 23, display.height - 2);
-      var playerKey = this.player._x + ',' + this.player._y;
-      if (this.levels[0].map[playerKey].corpse != null) {
+      if (corpse != null) {
         this.drawRackTile(
-            this.display, 23, display.height - 2, this.levels[0].map[playerKey].corpse, 'gray');
+            this.display, 23, display.height - 2, corpse, 'gray');
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[23 + j] = 6;
       }
@@ -308,7 +307,8 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(x, y) {
+var Player = function(level, x, y) {
+    this.level = level;
     this._x = x;
     this._y = y;
     this.lastClickEvent = 0;
@@ -355,7 +355,7 @@ dropCorpse = function(map, x, y, corpse) {
   }
 }
     
-Player.prototype.keyPress = function(code) {
+Player.prototype.keyPress = function(code, level) {
     if (Game.mode.length > 0) return;
 
     var keyMap = {};
@@ -376,14 +376,14 @@ Player.prototype.keyPress = function(code) {
     var newX = this._x + dir[0];
     var newY = this._y + dir[1];
     var newKey = newX + "," + newY;
-    if (!(newKey in Game.levels[0].map)) { return; }
+    if (!(newKey in level.map)) { return; }
 
-    var contents = Game.levels[0].map[newKey].contents;
+    var contents = level.map[newKey].contents;
     if (contents != null) {
       var damage = this.attack(contents);
       if (contents.health == 0) {
-        Game.levels[0].map[newKey].contents = null;
-        dropCorpse(Game.levels[0].map, newX, newY, contents.kind.glyph);
+        level.map[newKey].contents = null;
+        dropCorpse(level.map, newX, newY, contents.kind.glyph);
         Game.scheduler.remove(contents);
         Game.message('You kill the ant!');
       }
@@ -396,12 +396,12 @@ Player.prototype.keyPress = function(code) {
       this._x = newX;
       this._y = newY;
       var key = this._x + ',' + this._y;
-      if (Game.levels[0].map[key].corpse != null && Game.rack.length < Game.rack_size) {
-        Game.rack.push(Game.levels[0].map[key].corpse);
-        Game.levels[0].map[key].corpse = null;
+      if (level.map[key].corpse != null && Game.rack.length < Game.rack_size) {
+        Game.rack.push(level.map[key].corpse);
+        level.map[key].corpse = null;
         Game.message('You take the ant corpse.');
       }
-      Game.revealFrom(Game.levels[0], {x: this._x, y: this._y});
+      Game.revealFrom(level, {x: this._x, y: this._y});
     }
     window.removeEventListener("keydown", this);
     window.removeEventListener("mouseup", this);
@@ -409,7 +409,7 @@ Player.prototype.keyPress = function(code) {
     Game.engine.unlock();
 }
 
-Player.prototype.clickRackTile = function(index) {
+Player.prototype.clickRackTile = function(index, map) {
   var result,
       button,
       width,
@@ -420,10 +420,10 @@ Player.prototype.clickRackTile = function(index) {
     Game.rack = Game.rack.concat(remaining);
   } else if (index == 6) {
     var key = Game.player._x + ',' + Game.player._y
-    var glyph = Game.levels[0].map[key].corpse;
+    var glyph = map[key].corpse;
     if (glyph != null) {
       this.modalTiles.push({glyph: glyph, fromRack: false, color: 'gray'});
-      Game.levels[0].map[key].corpse = null;
+      map[key].corpse = null;
     }
   }
   if (this.modalTiles.length > 0) {
@@ -453,7 +453,7 @@ Player.prototype.clickRackTile = function(index) {
                 if (tiles[j].fromRack)
                   Game.rack.push(tiles[j].glyph);
                 else
-                  Game.levels[0].map[Game.player._x + ',' + Game.player._y].corpse = tiles[j].glyph;
+                  map[Game.player._x + ',' + Game.player._y].corpse = tiles[j].glyph;
               }
               tiles.length = 0;
               clicked = true;
@@ -463,7 +463,7 @@ Player.prototype.clickRackTile = function(index) {
             for (var i = 0; i < actButton.length; i++)
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
                 if (tiles.length == 1) {
-                  dropCorpse(Game.levels[0].map, Game.player._x, Game.player._y, tiles[0].glyph);
+                  dropCorpse(map, Game.player._x, Game.player._y, tiles[0].glyph);
                   Game.message('You drop the ant corpse.');
                 } else {
                   var spell = '', score = 0;
@@ -492,7 +492,7 @@ Player.prototype.click = function(loc) {
   if (loc.y == 24) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
-      this.clickRackTile(rackTileIndex);
+      this.clickRackTile(rackTileIndex, this.level.map);
   } else if (Game.mode.length > 0)
     Game.mode[Game.mode.length-1](loc);
 }
@@ -521,7 +521,7 @@ ROT.Display.prototype.eventToClientPosition = function(e) {
 
 Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
-    this.keyPress(e.keyCode);
+    this.keyPress(e.keyCode, this.level);
   else {
     var now = new Date().getTime();
     if (now - this.lastClickEvent < 1000)
@@ -532,10 +532,11 @@ Player.prototype.handleEvent = function(e) {
       this.click({x: coords[0], y: coords[1]});
   }
   if (Game.mode.length == 0)
-    Game._drawWholeMap();
+    Game._drawWholeMap(this.level);
 }
     
-var Pedro = function(kind, x, y) {
+var Pedro = function(kind, level, x, y) {
+    this.level = level;
     this._x = x;
     this._y = y;
     this.kind = kind;
@@ -547,9 +548,9 @@ Pedro.prototype.act = function() {
     var y = Game.player.getY();
 
     var passableCallback = function(x, y) {
-        return (x+","+y in Game.levels[0].map);
+        return (x+","+y in this);
     }
-    var astar = new ROT.Path.AStar(x, y, passableCallback, {topology:4});
+    var astar = new ROT.Path.AStar(x, y, passableCallback.bind(this.level.map), {topology:4});
 
     var path = [];
     var pathCallback = function(x, y) {
@@ -564,12 +565,12 @@ Pedro.prototype.act = function() {
         if (x == Game.player._x && y == Game.player._y)
           Game.message('The ant hits you!');
         else {
-          if (Game.levels[0].map[x + ',' + y].contents != null)
+          if (this.level.map[x + ',' + y].contents != null)
             return;
-          Game.levels[0].map[this._x + ',' + this._y].contents = null;
+          this.level.map[this._x + ',' + this._y].contents = null;
           this._x = x;
           this._y = y;
-          Game.levels[0].map[this._x + ',' + this._y].contents = this;
+          this.level.map[this._x + ',' + this._y].contents = this;
         }
     }
 }
