@@ -104,13 +104,15 @@ var Game = {
         level.map[(upCenter[0] - 1) + ',' + upCenter[1]].glyph = '\u261d';
         level.map[downCenter[0] + ',' + downCenter[1]].glyph = '\u261f';
 
-        this.player = this._createBeing(level, Player, null, freeCells);
-        this.player._x = upCenter[0] + 1;
-        this.player._y = upCenter[1];
+        this.player = new Player(upCenter[0] + 1, upCenter[1]);
 
         level.foes = [];
-        for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++)
-          level.foes.push(this._createBeing(level, Pedro, this.foeKinds[0], freeCells));
+        for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
+          var loc = this.newBeingLocation(freeCells);
+          var foe = new Pedro(this.foeKinds[0], loc.x, loc.y);
+          level.map[loc.x + ',' + loc.y].contents = foe;
+          level.foes.push(foe);
+        }
 
         return level;
     },
@@ -187,16 +189,14 @@ var Game = {
           tile.revealed = true;
       }.bind(level));
     },
-    
-    _createBeing: function(level, what, kind, freeCells) {
+
+    newBeingLocation: function(freeCells) {
         var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
         var key = freeCells.splice(index, 1)[0];
         var parts = key.split(",");
         var x = parseInt(parts[0]);
         var y = parseInt(parts[1]);
-        var being = new what(kind, x, y);
-        level.map[key].contents = being;
-        return being;
+        return {x: x, y: y};
     },
 
     _drawWholeMap: function() {
@@ -308,7 +308,7 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(_, x, y) {
+var Player = function(x, y) {
     this._x = x;
     this._y = y;
     this.lastClickEvent = 0;
