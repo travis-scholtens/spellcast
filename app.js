@@ -16,10 +16,17 @@ var foeDistribution = function(kinds, depth) {
   return dist;
 };
 
-var revealFrom = function(level, loc) {
+var fovFrom = function(level, loc, callback) {
   level.fov.compute(loc.x, loc.y, level.radius,
       function(x, y, _, _) {
-        var tile = level.map[x + ',' + y];
+        callback({x: x, y: y});
+      });
+}
+
+var revealFrom = function(level, fromLoc) {
+  fovFrom(level, fromLoc,
+      function(loc) {
+        var tile = level.map[loc.x + ',' + loc.y];
         if (tile != undefined)
           tile.revealed = true;
       }.bind(level));
@@ -632,21 +639,33 @@ var pathTo = function(map, fromLoc, toLoc) {
          null;
 }
 
+var locInView = function(level, fromLoc, targetLoc) {
+  var canSeeTarget = false;
+  fovFrom(level, fromLoc,
+      function(loc) {
+        if (loc.x == this.x && loc.y == this.y)
+          canSeeTarget = true;
+      }.bind(targetLoc));
+  return canSeeTarget;
+}
+
 Pedro.prototype.act = function() {
-  var loc = pathTo(this.level.map,
-                   { x: this._x, y: this._y },
-                   { x: Game.player._x, y: Game.player._y });
-  if (loc == null)
+  var loc = { x: this._x, y: this._y },
+      playerLoc = { x: Game.player._x, y: Game.player._y },
+      inView = locInView(this.level, loc, playerLoc),
+      nextLoc = inView ? pathTo(this.level.map, loc, playerLoc) : null;
+
+  if (nextLoc == null)
     return;
 
-  if (loc.x == Game.player._x && loc.y == Game.player._y)
+  if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y)
     Game.message('The ' + this.kind.name + ' hits you!');
   else {
-    if (this.level.map[loc.x + ',' + loc.y].contents != null)
+    if (this.level.map[nextLoc.x + ',' + nextLoc.y].contents != null)
       return;
     this.level.map[this._x + ',' + this._y].contents = null;
-    this._x = loc.x;
-    this._y = loc.y;
+    this._x = nextLoc.x;
+    this._y = nextLoc.y;
     this.level.map[this._x + ',' + this._y].contents = this;
   }
 }
