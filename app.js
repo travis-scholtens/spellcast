@@ -616,6 +616,7 @@ var Pedro = function(kind, level, x, y) {
     this._y = y;
     this.kind = kind;
     this.health = kind.health;
+    this.lastSawPlayer = null;
 }
 
 Pedro.prototype.getSpeed = function() { return 100; }
@@ -653,7 +654,15 @@ Pedro.prototype.act = function() {
   var loc = { x: this._x, y: this._y },
       playerLoc = { x: Game.player._x, y: Game.player._y },
       inView = locInView(this.level, loc, playerLoc),
-      nextLoc = inView ? pathTo(this.level.map, loc, playerLoc) : null;
+      nextLoc = inView || this.lastSawPlayer !== null ?
+          pathTo(this.level.map, loc, playerLoc) : null;
+
+  if (inView)
+    this.lastSawPlayer = 0;
+  else if (this.lastSawPlayer !== null && this.lastSawPlayer < 3)
+    this.lastSawPlayer++;
+  else
+    this.lastSawPlayer = null;
 
   if (nextLoc == null)
     return;
