@@ -506,10 +506,10 @@ Player.prototype.clickRackTile = function(index, map) {
     height = button !== undefined ? 8 : 4;
     result = Game.modal({x: width, y: height}, button);
     for (var i = 0; i < this.modalTiles.length; i++) {
-      var padding = this.modalTiles.length == 1 ? 2 : 1;
+      var padding = this.modalTiles.length == 1 ? 1 : 0;
       Game.drawRackTile(
           Game.display,
-          result.center.x - width/2 + 3 * (this.modalTiles.length - i) + padding,
+          result.center.x - width/2 + 3 * i + 4 + padding,
           result.center.y - height/4,
           this.modalTiles[i].glyph, this.modalTiles[i].color);
     }
