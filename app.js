@@ -16,6 +16,15 @@ var foeDistribution = function(kinds, depth) {
   return dist;
 };
 
+var revealFrom = function(level, loc) {
+  level.fov.compute(loc.x, loc.y, level.radius,
+      function(x, y, _, _) {
+        var tile = level.map[x + ',' + y];
+        if (tile != undefined)
+          tile.revealed = true;
+      }.bind(level));
+}
+
 var Game = {
     display: null,
     levels: [],
@@ -76,7 +85,7 @@ var Game = {
         for (var i = 0; i < 26; i++)
           this.levels.push(this._generateMap(i+1));
         this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
-        this.revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
+        revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
         this._drawWholeMap(this.player.level);
         
         this.scheduler = new ROT.Scheduler.Speed();
@@ -211,14 +220,6 @@ var Game = {
                                  y: origin.y + ymax - 3});
       }
       return result;
-    },
-
-    revealFrom: function(level, loc) {
-      level.fov.compute(loc.x, loc.y, level.radius, function(x, y, _, _) {
-        var tile = this.map[x + ',' + y];
-        if (tile != undefined)
-          tile.revealed = true;
-      }.bind(level));
     },
 
     newBeingLocation: function(freeCells) {
@@ -465,7 +466,7 @@ Player.prototype.keyPress = function(code, level) {
         this._x = stairLoc.x;
         this._y = stairLoc.y;
       }
-      Game.revealFrom(this.level, {x: this._x, y: this._y});
+      revealFrom(this.level, {x: this._x, y: this._y});
     }
     window.removeEventListener("keydown", this);
     window.removeEventListener("mouseup", this);
