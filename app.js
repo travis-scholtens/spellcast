@@ -357,6 +357,7 @@ var Player = function(level, x, y) {
     this.lastClickEvent = 0;
     this.modalTiles = [];
     this.experience = 0;
+    this.woundedness = 0;
 }
 
 Player.prototype.getSpeed = function() {
@@ -368,6 +369,17 @@ Player.prototype.getSpeed = function() {
          this.experience < 130 ? 110 :
          this.experience < 200 ? 115 :
          120;
+}
+
+Player.prototype.getHealth = function() {
+  return (this.experience < 10 ? 20 :
+          this.experience < 20 ? 25 :
+          this.experience < 35 ? 30 :
+          this.experience < 55 ? 35 :
+          this.experience < 85 ? 40 :
+          this.experience < 130 ? 45 :
+          this.experience < 200 ? 50 :
+          55) - this.woundedness;
 }
     
 Player.prototype.getX = function() { return this._x; }
@@ -650,6 +662,14 @@ var locInView = function(level, fromLoc, targetLoc) {
   return canSeeTarget;
 }
 
+Pedro.prototype.attack = function(player) {
+  var damage = Math.min(
+      Math.max(0, Math.floor(ROT.RNG.getNormal(3, 1))),
+      player.getHealth());
+  player.woundedness += damage;
+  return damage;
+}
+
 Pedro.prototype.act = function() {
   var loc = { x: this._x, y: this._y },
       playerLoc = { x: Game.player._x, y: Game.player._y },
@@ -667,9 +687,15 @@ Pedro.prototype.act = function() {
   if (nextLoc == null)
     return;
 
-  if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y)
-    Game.message('The ' + this.kind.name + ' hits you!');
-  else {
+  if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
+    var damage = this.attack(Game.player);
+    if (Game.player.getHealth() == 0)
+      Game.message('The ' + this.kind.name + ' kills you!');
+    else if (damage > 0)
+      Game.message('The ' + this.kind.name + ' hits you! %c{red}(-' + damage + ')');
+    else
+      Game.message('The ' + this.kind.name + ' misses you.');
+  } else {
     if (this.level.map[nextLoc.x + ',' + nextLoc.y].contents != null)
       return;
     this.level.map[this._x + ',' + this._y].contents = null;
