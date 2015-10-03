@@ -611,35 +611,41 @@ var Pedro = function(kind, level, x, y) {
 }
 
 Pedro.prototype.getSpeed = function() { return 100; }
-    
-Pedro.prototype.act = function() {
-    var x = Game.player.getX();
-    var y = Game.player.getY();
 
-    var passableCallback = function(x, y) {
+var pathTo = function(map, fromLoc, toLoc) {
+  var astar = new ROT.Path.AStar(toLoc.x, toLoc.y,
+      function(x, y) {
         return (x+","+y in this);
-    }
-    var astar = new ROT.Path.AStar(x, y, passableCallback.bind(this.level.map), {topology:4});
+      }.bind(map),
+      {topology:4});
 
-    var path = [];
-    var pathCallback = function(x, y) {
-        path.push([x, y]);
-    }
-    astar.compute(this._x, this._y, pathCallback);
+  var path = [];
+  astar.compute(fromLoc.x, fromLoc.y,
+      function(x, y) {
+        this.push([x, y]);
+      }.bind(path));
 
-    path.shift();
-    if (path.length > 0) {
-        x = path[0][0];
-        y = path[0][1];
-        if (x == Game.player._x && y == Game.player._y)
-          Game.message('The ' + this.kind.name + ' hits you!');
-        else {
-          if (this.level.map[x + ',' + y].contents != null)
-            return;
-          this.level.map[this._x + ',' + this._y].contents = null;
-          this._x = x;
-          this._y = y;
-          this.level.map[this._x + ',' + this._y].contents = this;
-        }
-    }
+  path.shift();
+  return path.length > 0 ?
+         { x: path[0][0], y: path[0][1] } :
+         null;
+}
+
+Pedro.prototype.act = function() {
+  var loc = pathTo(this.level.map,
+                   { x: this._x, y: this._y },
+                   { x: Game.player._x, y: Game.player._y });
+  if (loc == null)
+    return;
+
+  if (loc.x == Game.player._x && loc.y == Game.player._y)
+    Game.message('The ' + this.kind.name + ' hits you!');
+  else {
+    if (this.level.map[loc.x + ',' + loc.y].contents != null)
+      return;
+    this.level.map[this._x + ',' + this._y].contents = null;
+    this._x = loc.x;
+    this._y = loc.y;
+    this.level.map[this._x + ',' + this._y].contents = this;
+  }
 }
