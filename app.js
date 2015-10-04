@@ -215,10 +215,16 @@ var Game = {
 
         this.engine = new ROT.Engine(this.scheduler);
 
-        this.attempt = new Attempt();
-        this._drawWholeMap(this.attempt);
-
+        this.newAttempt();
         this.engine.start();
+    },
+
+    newAttempt: function() {
+      this.engine.lock();
+      this.scheduler.clear();
+      this.attempt = new Attempt();
+      this._drawWholeMap(this.attempt);
+      this.engine.unlock();
     },
 
     schedule: function(foes) {
@@ -716,8 +722,10 @@ Pedro.prototype.act = function() {
 
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
     var damage = this.attack(Game.attempt.player);
-    if (Game.attempt.player.getHealth() == 0)
+    if (Game.attempt.player.getHealth() == 0) {
       Game.attempt.message('The ' + this.kind.name + ' kills you!');
+      Game.newAttempt();
+    }
     else if (damage > 0)
       Game.attempt.message('The ' + this.kind.name + ' hits you! %c{red}(-' + damage + ')');
     else
