@@ -32,16 +32,138 @@ var revealFrom = function(level, fromLoc) {
       }.bind(level));
 }
 
+var Attempt = function() {
+  this.levels = [];
+  this.player = null;
+  this.messages = [];
+  this.rack = [];
+  this.mode = [];
+
+  for (var i = 0; i < 26; i++)
+    this.levels.push(_generateMap(i+1));
+  this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
+  revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
+
+  Game.scheduler.add(this.player, true);
+  Game.schedule(this.player.level.foes);
+}
+
+var _generateMap = function(depth) {
+  var level = {};
+  level.width = 128;
+  level.height = 128;
+  level.radius = Math.sqrt(level.width * level.width + level.height * level.height);
+  level.map = {};
+  var digger = new ROT.Map.Digger(level.width, level.height);
+  var freeCells = [];
+
+  var digCallback = function(x, y, value) {
+      if (value) { return; }
+
+      var key = x+","+y;
+      this.map[key] = new Tile('.');
+      freeCells.push(key);
+  }
+  digger.create(digCallback.bind(level));
+
+  level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
+    return (x + ',' + y) in this.map;
+  }.bind(level));
+
+  var rooms = digger.getRooms();
+  var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+  var downRoom = upRoom;
+  while (downRoom == upRoom)
+    downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+
+  var upCenter = rooms[upRoom].getCenter(),
+      downCenter = rooms[downRoom].getCenter();
+  level.up = {x: upCenter[0] - 1, y: upCenter[1]};
+  level.down = {x: downCenter[0], y: downCenter[1]};
+
+  var kinds = foeDistribution(Game.foeKinds, depth);
+  level.foes = [];
+  for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
+    var loc = this.newBeingLocation(freeCells);
+    var foe = new Pedro(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
+    level.map[loc.x + ',' + loc.y].contents = foe;
+    level.foes.push(foe);
+  }
+
+  return level;
+}
+
+Attempt.prototype.levelBelow = function(level) {
+  return this.levels[Math.min(this.levels.length - 1, this.levels.indexOf(level) + 1)];
+}
+
+Attempt.prototype.levelAbove = function(level) {
+  return this.levels[Math.max(0, this.levels.indexOf(level) - 1)];
+}
+
+var newBeingLocation = function(freeCells) {
+  var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
+  var key = freeCells.splice(index, 1)[0];
+  var parts = key.split(",");
+  var x = parseInt(parts[0]);
+  var y = parseInt(parts[1]);
+  return {x: x, y: y};
+}
+
+var clearRackSpace = function(display, x, y) {
+  for (var i = 0; i < 3; i++)
+    display.draw(x - 1 + i, y, '');
+}
+
+var rackTileText = function(glyph, color) {
+  return '%b{' + color + '}%c{black}' + glyph;
+}
+
+var drawRackTile = function(display, x, y, glyph, color) {
+  var value = Game.values[glyph],
+      ax,
+      digits;
+  if (value < 10) {
+    ax = x - 0.5;
+    digits = [value];
+  } else {
+    ax = x - 0.75;
+    digits = [Math.floor(value/10), value % 10];
+  }
+  display.drawText(ax, y, this.rackTileText(glyph, color));
+  for (var i = 0; i < digits.length; i++)
+    display.drawText(ax + 0.75 * i, y,
+        rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
+}
+
+var drawRackTile = function(display, x, y, glyph, color) {
+  var value = Game.values[glyph],
+      ax,
+      digits;
+  if (value < 10) {
+    ax = x - 0.5;
+    digits = [value];
+  } else {
+    ax = x - 0.75;
+    digits = [Math.floor(value/10), value % 10];
+  }
+  display.drawText(ax, y, rackTileText(glyph, color));
+  for (var i = 0; i < digits.length; i++)
+    display.drawText(ax + 0.75 * i, y,
+        rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
+}
+
+Attempt.prototype.message = function(text) {
+  this.messages.push(text);
+}
+
 var Game = {
     display: null,
-    levels: [],
     engine: null,
-    player: null,
-    messages: [],
-    rack: [],
+    scheduler: null,
+    attempt: null,
     rack_size: 6,
     rackTileLocations: {},
-    mode: [],
 
     foeKinds: [
       new FoeKind('a', 'ant', 'darkred', 10, 1, 9),
@@ -88,64 +210,15 @@ var Game = {
             function(k) {
               this[k.glyph] = k;
             }.bind(this.glyphKind));
-        
-        for (var i = 0; i < 26; i++)
-          this.levels.push(this._generateMap(i+1));
-        this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
-        revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
-        this._drawWholeMap(this.player.level);
-        
+
         this.scheduler = new ROT.Scheduler.Speed();
-        this.scheduler.add(this.player, true);
-        this.schedule(this.player.level.foes);
 
         this.engine = new ROT.Engine(this.scheduler);
+
+        this.attempt = new Attempt();
+        this._drawWholeMap(this.attempt);
+
         this.engine.start();
-    },
-    
-    _generateMap: function(depth) {
-        var level = {};
-        level.width = 128;
-        level.height = 128;
-        level.radius = Math.sqrt(level.width * level.width + level.height * level.height);
-        level.map = {};
-        var digger = new ROT.Map.Digger(level.width, level.height);
-        var freeCells = [];
-        
-        var digCallback = function(x, y, value) {
-            if (value) { return; }
-            
-            var key = x+","+y;
-            this.map[key] = new Tile('.');
-            freeCells.push(key);
-        }
-        digger.create(digCallback.bind(level));
-
-        level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
-          return (x + ',' + y) in this.map;
-        }.bind(level));
-        
-        var rooms = digger.getRooms();
-        var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
-        var downRoom = upRoom;
-        while (downRoom == upRoom)
-          downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
-
-        var upCenter = rooms[upRoom].getCenter(),
-            downCenter = rooms[downRoom].getCenter();
-        level.up = {x: upCenter[0] - 1, y: upCenter[1]};
-        level.down = {x: downCenter[0], y: downCenter[1]};
-
-        var kinds = foeDistribution(this.foeKinds, depth);
-        level.foes = [];
-        for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
-          var loc = this.newBeingLocation(freeCells);
-          var foe = new Pedro(this.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
-          level.map[loc.x + ',' + loc.y].contents = foe;
-          level.foes.push(foe);
-        }
-
-        return level;
     },
 
     schedule: function(foes) {
@@ -154,14 +227,6 @@ var Game = {
 
     unschedule: function(foes) {
       foes.forEach(this.scheduler.remove.bind(this.scheduler));
-    },
-
-    levelBelow: function(level) {
-      return this.levels[Math.min(this.levels.length - 1, this.levels.indexOf(level) + 1)];
-    },
-
-    levelAbove: function(level) {
-      return this.levels[Math.max(0, this.levels.indexOf(level) - 1)];
     },
 
     modal: function(size, button) {
@@ -229,28 +294,20 @@ var Game = {
       return result;
     },
 
-    newBeingLocation: function(freeCells) {
-        var index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
-        var key = freeCells.splice(index, 1)[0];
-        var parts = key.split(",");
-        var x = parseInt(parts[0]);
-        var y = parseInt(parts[1]);
-        return {x: x, y: y};
-    },
-
-    _drawWholeMap: function(level) {
+    _drawWholeMap: function(attempt) {
+      var level = attempt.player.level;
       var display = this.display.getOptions();
-      var messageCount = this.messages.length;
+      var messageCount = attempt.messages.length;
       for (var i = 0; i < messageCount; i++)
-        this.display.drawText(0, i, '> ' + this.messages[i]);
-      this.messages.length = 0;
+        this.display.drawText(0, i, '> ' + attempt.messages[i]);
+      attempt.messages.length = 0;
       for (var dx = 0; dx < display.width; dx++)
         for (var dy = messageCount; dy < display.height - 3; dy++) {
-          var x = this.player.getX() - display.width/2 + dx,
-              y = this.player.getY() - display.height/2 + dy;
+          var x = attempt.player.getX() - display.width/2 + dx,
+              y = attempt.player.getY() - display.height/2 + dy;
           if ((0 <= x && x < level.width) &&
               (0 <= y && y < level.height)) {
-            if (x == this.player._x && y == this.player._y)
+            if (x == attempt.player._x && y == attempt.player._y)
               this.display.draw(dx, dy, '@', '#ff0');
             else {
               var tile = level.map[x + ',' + y];
@@ -273,7 +330,7 @@ var Game = {
             }
           }
         }
-      this.drawRackTiles(level.map[this.player._x + ',' + this.player._y].corpse);
+      this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
     },
 
     drawRackTiles: function(corpse) {
@@ -287,10 +344,10 @@ var Game = {
       }
       this.rackTileLocations.length = 0;
       for (var i = 0; i < this.rack_size; i++)
-        this.clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
-      for (var i = 0; i < this.rack.length; i++) {
-        this.drawRackTile(
-            this.display, 2 + 3 * i, display.height - 2, this.rack[i], 'tan');
+        clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
+      for (var i = 0; i < this.attempt.rack.length; i++) {
+        drawRackTile(
+            this.display, 2 + 3 * i, display.height - 2, this.attempt.rack[i], 'tan');
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[2 + 3 * i + j] = i;
       }
@@ -303,43 +360,13 @@ var Game = {
         this.display.draw(dx, display.height - 1, glyph, "gray");
       }
 
-      this.clearRackSpace(this.display, 23, display.height - 2);
+      clearRackSpace(this.display, 23, display.height - 2);
       if (corpse != null) {
-        this.drawRackTile(
+        drawRackTile(
             this.display, 23, display.height - 2, corpse, 'gray');
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[23 + j] = 6;
       }
-    },
-
-    clearRackSpace: function(display, x, y) {
-      for (var i = 0; i < 3; i++)
-        this.display.draw(x - 1 + i, y, '');
-    },
-
-    rackTileText: function(glyph, color) {
-      return '%b{' + color + '}%c{black}' + glyph;
-    },
-
-    drawRackTile: function(display, x, y, glyph, color) {
-      var value = this.values[glyph],
-          ax,
-          digits;
-      if (value < 10) {
-        ax = x - 0.5;
-        digits = [value];
-      } else {
-        ax = x - 0.75;
-        digits = [Math.floor(value/10), value % 10];
-      }
-      display.drawText(ax, y, this.rackTileText(glyph, color));
-      for (var i = 0; i < digits.length; i++)
-        display.drawText(ax + 0.75 * i, y,
-            this.rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
-    },
-
-    message: function(text) {
-      this.messages.push(text);
     }
 };
 
@@ -423,7 +450,7 @@ dropCorpse = function(map, x, y, corpse) {
 }
     
 Player.prototype.keyPress = function(code, level) {
-    if (Game.mode.length > 0) return;
+    if (Game.attempt.mode.length > 0) return;
 
     var keyMap = {};
     keyMap[38] = 0;
@@ -453,30 +480,30 @@ Player.prototype.keyPress = function(code, level) {
         level.map[newKey].contents = null;
         dropCorpse(level.map, newX, newY, contents.kind.glyph);
         Game.scheduler.remove(contents);
-        Game.message('You kill the ' + name + '!');
+        Game.attempt.message('You kill the ' + name + '!');
       }
       else if (damage > 0)
-        Game.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
+        Game.attempt.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
       else
-        Game.message('You miss the ' + name + '.');
+        Game.attempt.message('You miss the ' + name + '.');
     }
     else {
       this._x = newX;
       this._y = newY;
       var key = this._x + ',' + this._y;
-      if (level.map[key].corpse != null && Game.rack.length < Game.rack_size) {
+      if (level.map[key].corpse != null && Game.attempt.rack.length < Game.rack_size) {
         var name = Game.glyphKind[level.map[key].corpse].name;
-        Game.rack.push(level.map[key].corpse);
+        Game.attempt.rack.push(level.map[key].corpse);
         level.map[key].corpse = null;
-        Game.message('You take the ' + name + ' corpse.');
+        Game.attempt.message('You take the ' + name + ' corpse.');
       }
       var stairLoc;
       if (this._x == level.down.x && this._y == level.down.y) {
-        this.level = Game.levelBelow(level);
+        this.level = Game.attempt.levelBelow(level);
         stairLoc = this.level.up;
       }
       else if (this._x == level.up.x && this._y == level.up.y) {
-        this.level = Game.levelAbove(level);
+        this.level = Game.attempt.levelAbove(level);
         stairLoc = this.level.down;
       }
       if (this.level != level) {
@@ -498,12 +525,12 @@ Player.prototype.clickRackTile = function(index, map) {
       button,
       width,
       height;
-  if (index < Game.rack.length) {
-    var remaining = Game.rack.splice(index);
+  if (index < Game.attempt.rack.length) {
+    var remaining = Game.attempt.rack.splice(index);
     this.modalTiles.push({glyph: remaining.shift(), fromRack: true, color: 'tan'});
-    Game.rack = Game.rack.concat(remaining);
+    Game.attempt.rack = Game.attempt.rack.concat(remaining);
   } else if (index == 6) {
-    var key = Game.player._x + ',' + Game.player._y
+    var key = Game.attempt.player._x + ',' + Game.attempt.player._y
     var glyph = map[key].corpse;
     if (glyph != null) {
       this.modalTiles.push({glyph: glyph, fromRack: false, color: 'gray'});
@@ -519,16 +546,16 @@ Player.prototype.clickRackTile = function(index, map) {
     result = Game.modal({x: width, y: height}, button);
     for (var i = 0; i < this.modalTiles.length; i++) {
       var padding = this.modalTiles.length == 1 ? 1 : 0;
-      Game.drawRackTile(
+      drawRackTile(
           Game.display,
           result.center.x - width/2 + 3 * i + 4 + padding,
           result.center.y - height/4,
           this.modalTiles[i].glyph, this.modalTiles[i].color);
     }
     Game.drawRackTiles();
-    if (Game.mode.length > 0)
-      Game.mode.pop();
-    Game.mode.push(function(player, index, tiles, closeButton, actButton) {
+    if (Game.attempt.mode.length > 0)
+      Game.attempt.mode.pop();
+    Game.attempt.mode.push(function(player, index, tiles, closeButton, actButton) {
         return function(loc) {
           var clicked = false;
           for (var i = 0; i < closeButton.length; i++)
@@ -548,8 +575,8 @@ Player.prototype.clickRackTile = function(index, map) {
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
                 if (tiles.length == 1) {
                   var name = Game.glyphKind[tiles[0].glyph].name;
-                  dropCorpse(map, Game.player._x, Game.player._y, tiles[0].glyph);
-                  Game.message('You drop the ' + name + ' corpse.');
+                  dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].glyph);
+                  Game.attempt.message('You drop the ' + name + ' corpse.');
                 } else {
                   var spell = '', score = 0;
                   for (var j = 0; j < tiles.length; j++) {
@@ -560,17 +587,17 @@ Player.prototype.clickRackTile = function(index, map) {
                     score += 50;
                   if (spell in words) {
                     player.experience += score;
-                    Game.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
+                    Game.attempt.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
                   }
                   else
-                    Game.message('Nothing happens.');
+                    Game.attempt.message('Nothing happens.');
                 }
                 tiles.length = 0;
                 clicked = true;
                 break;
               }
           if (clicked)
-            Game.mode.pop();
+            Game.attempt.mode.pop();
         }; }(this, index, this.modalTiles, result.closeButton, result.actButton));
   }
 }
@@ -580,8 +607,8 @@ Player.prototype.click = function(loc) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
       this.clickRackTile(rackTileIndex, this.level.map);
-  } else if (Game.mode.length > 0)
-    Game.mode[Game.mode.length-1](loc);
+  } else if (Game.attempt.mode.length > 0)
+    Game.attempt.mode[Game.attempt.mode.length-1](loc);
 }
 
 ROT.Display.prototype.eventToClientPosition = function(e) {
@@ -618,8 +645,8 @@ Player.prototype.handleEvent = function(e) {
     if (coords[0] >= 0 && coords[1] >= 0)
       this.click({x: coords[0], y: coords[1]});
   }
-  if (Game.mode.length == 0)
-    Game._drawWholeMap(this.level);
+  if (Game.attempt.mode.length == 0)
+    Game._drawWholeMap(Game.attempt);
 }
     
 var Pedro = function(kind, level, x, y) {
@@ -672,7 +699,7 @@ Pedro.prototype.attack = function(player) {
 
 Pedro.prototype.act = function() {
   var loc = { x: this._x, y: this._y },
-      playerLoc = { x: Game.player._x, y: Game.player._y },
+      playerLoc = { x: Game.attempt.player._x, y: Game.attempt.player._y },
       inView = locInView(this.level, loc, playerLoc),
       nextLoc = inView || this.lastSawPlayer !== null ?
           pathTo(this.level.map, loc, playerLoc) : null;
@@ -688,13 +715,13 @@ Pedro.prototype.act = function() {
     return;
 
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
-    var damage = this.attack(Game.player);
-    if (Game.player.getHealth() == 0)
-      Game.message('The ' + this.kind.name + ' kills you!');
+    var damage = this.attack(Game.attempt.player);
+    if (Game.attempt.player.getHealth() == 0)
+      Game.attempt.message('The ' + this.kind.name + ' kills you!');
     else if (damage > 0)
-      Game.message('The ' + this.kind.name + ' hits you! %c{red}(-' + damage + ')');
+      Game.attempt.message('The ' + this.kind.name + ' hits you! %c{red}(-' + damage + ')');
     else
-      Game.message('The ' + this.kind.name + ' misses you.');
+      Game.attempt.message('The ' + this.kind.name + ' misses you.');
   } else {
     if (this.level.map[nextLoc.x + ',' + nextLoc.y].contents != null)
       return;
