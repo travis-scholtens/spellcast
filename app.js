@@ -58,16 +58,16 @@ var _generateMap = function(depth) {
   var freeCells = [];
 
   var digCallback = function(x, y, value) {
-      if (value) { return; }
-
       var key = x+","+y;
-      this.map[key] = new Tile('.');
-      freeCells.push(key);
+      this.map[key] = new Tile(value ? '#' : '.', !value);
+      if (!value)
+        freeCells.push(key);
   }
   digger.create(digCallback.bind(level));
 
   level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
-    return (x + ',' + y) in this.map;
+    var tile = this.map[x+','+y];
+    return tile !== undefined && tile.passable;
   }.bind(level));
 
   var rooms = digger.getRooms();
@@ -376,8 +376,9 @@ var Game = {
     }
 };
 
-var Tile = function(glyph) {
+var Tile = function(glyph, passable) {
   this.glyph = glyph;
+  this.passable = passable;
   this.revealed = false;
   this.contents = null;
   this.corpse = null;
@@ -476,7 +477,8 @@ Player.prototype.keyPress = function(code, level) {
     var newX = this._x + dir[0];
     var newY = this._y + dir[1];
     var newKey = newX + "," + newY;
-    if (!(newKey in level.map)) { return; }
+    if (!(newKey in level.map && level.map[newKey].passable))
+      return;
 
     var contents = level.map[newKey].contents;
     if (contents != null) {
@@ -669,7 +671,8 @@ Pedro.prototype.getSpeed = function() { return 100; }
 var pathTo = function(map, fromLoc, toLoc) {
   var astar = new ROT.Path.AStar(toLoc.x, toLoc.y,
       function(x, y) {
-        return (x+","+y in this);
+        var key = x + ',' + y;
+        return key in this && this[key].passable;
       }.bind(map),
       {topology:4});
 
