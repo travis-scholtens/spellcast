@@ -59,7 +59,7 @@ var _generateMap = function(depth) {
 
   var digCallback = function(x, y, value) {
       var key = x+","+y;
-      this.map[key] = new Tile(value ? '#' : '.', !value);
+      this.map[key] = new Tile(value ? false : '.');
       if (!value)
         freeCells.push(key);
   }
@@ -155,6 +155,44 @@ var drawRackTile = function(display, x, y, glyph, color) {
 
 Attempt.prototype.message = function(text) {
   this.messages.push(text);
+}
+
+var Direction = {
+  N: 0b0001,
+  E: 0b0010,
+  S: 0b0100,
+  W: 0b1000
+}
+
+var selectWall = function(neighborWallDirections) {
+  switch (neighborWallDirections) {
+    case 0b0011: return '\u255a';
+    case 0b0101: return '\u2551';
+    case 0b0110: return '\u2554';
+    case 0b0111: return '\u2560';
+    case 0b1001: return '\u255d';
+    case 0b1010: return '\u2550';
+    case 0b1011: return '\u2569';
+    case 0b1100: return '\u2557';
+    case 0b1101: return '\u2563';
+    case 0b1110: return '\u2566';
+    case 0b1111: return '\u256c';
+    default: return '\u25ef';
+  }
+}
+
+var revealedAndImpassable = function(map, x, y) {
+  var tile = map[x + ',' + y];
+  return tile !== undefined && tile.revealed && !tile.passable;
+}
+
+var neighborWalls = function(map, x, y) {
+  var directions = 0;
+  if (revealedAndImpassable(map, x, y-1)) directions |= Direction.N;
+  if (revealedAndImpassable(map, x+1, y)) directions |= Direction.E;
+  if (revealedAndImpassable(map, x, y+1)) directions |= Direction.S;
+  if (revealedAndImpassable(map, x-1, y)) directions |= Direction.W;
+  return directions;
 }
 
 var Game = {
@@ -329,8 +367,10 @@ var Game = {
                   glyph = '\u261d';
                 else if (x == level.down.x && y == level.down.y)
                   glyph = '\u261f';
-                else
+                else if (tile.passable)
                   glyph = tile.glyph;
+                else
+                  glyph = selectWall(neighborWalls(level.map, x, y));
               }
               this.display.draw(dx, dy, glyph, color);
             }
@@ -376,9 +416,9 @@ var Game = {
     }
 };
 
-var Tile = function(glyph, passable) {
-  this.glyph = glyph;
-  this.passable = passable;
+var Tile = function(glyph) {
+  this.passable = glyph !== false;
+  this.glyph = this.passable ? glyph : null;
   this.revealed = false;
   this.contents = null;
   this.corpse = null;
