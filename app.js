@@ -63,6 +63,11 @@ var _generateMap = function(depth) {
   }
   digger.create(digCallback.bind(level));
 
+  for (var x = 0; x < level.width; x++)
+    for (var y = 0; y < level.height; y++)
+      if (isWall(level, x, y))
+        level.map[x+','+y].glyph = selectWall(neighborWalls(level, x, y));
+
   level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
     return x >= 0 && x < this.width && y >= 0 && y < this.height ?
         this.map[x+','+y].passable : false;
@@ -380,10 +385,8 @@ var Game = {
                   glyph = '\u261d';
                 else if (x == level.down.x && y == level.down.y)
                   glyph = '\u261f';
-                else if (tile.passable)
-                  glyph = tile.glyph;
                 else
-                  glyph = selectWall(neighborWalls(level, x, y));
+                  glyph = tile.glyph;
               }
               this.display.draw(dx, dy, glyph, color);
             }
