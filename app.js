@@ -179,17 +179,32 @@ var selectWall = function(neighborWallDirections) {
   }
 }
 
-var revealedAndImpassable = function(map, x, y) {
-  var tile = map[x + ',' + y];
-  return tile.revealed && !tile.passable;
+var exposed = function(level, x, y) {
+  if (level.map[x + ',' + y].passable)
+    return true;
+  var ncs = [[-1,-1], [-1,1], [1,-1], [1, 1]];
+  for (var i = 0; i < ncs.length; i++) {
+    var nx = x + ncs[i][0],
+        ny = y + ncs[i][1];
+    if (nx >= 0 && nx < level.width && ny >= 0 && ny < level.height)
+      if (level.map[nx + ',' + ny].passable)
+        return true;
+  }
+  return false;
 }
 
-var neighborWalls = function(map, x, y) {
+var isWall = function(level, x, y) {
+  if (x < 0 || x >= level.width || y < 0 || y >= level.height)
+    return false;
+  return exposed(level, x, y) && !level.map[x + ',' + y].passable;
+}
+
+var neighborWalls = function(level, x, y) {
   var directions = 0;
-  if (revealedAndImpassable(map, x, y-1)) directions |= Direction.N;
-  if (revealedAndImpassable(map, x+1, y)) directions |= Direction.E;
-  if (revealedAndImpassable(map, x, y+1)) directions |= Direction.S;
-  if (revealedAndImpassable(map, x-1, y)) directions |= Direction.W;
+  if (isWall(level, x, y-1)) directions |= Direction.N;
+  if (isWall(level, x+1, y)) directions |= Direction.E;
+  if (isWall(level, x, y+1)) directions |= Direction.S;
+  if (isWall(level, x-1, y)) directions |= Direction.W;
   return directions;
 }
 
@@ -368,7 +383,7 @@ var Game = {
                 else if (tile.passable)
                   glyph = tile.glyph;
                 else
-                  glyph = selectWall(neighborWalls(level.map, x, y));
+                  glyph = selectWall(neighborWalls(level, x, y));
               }
               this.display.draw(dx, dy, glyph, color);
             }
