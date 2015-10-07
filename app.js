@@ -26,9 +26,7 @@ var fovFrom = function(level, loc, callback) {
 var revealFrom = function(level, fromLoc) {
   fovFrom(level, fromLoc,
       function(loc) {
-        var tile = level.map[loc.x + ',' + loc.y];
-        if (tile != undefined)
-          tile.revealed = true;
+        level.map[loc.x + ',' + loc.y].revealed = true;
       }.bind(level));
 }
 
@@ -66,8 +64,8 @@ var _generateMap = function(depth) {
   digger.create(digCallback.bind(level));
 
   level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
-    var tile = this.map[x+','+y];
-    return tile !== undefined && tile.passable;
+    return x >= 0 && x < this.width && y >= 0 && y < this.height ?
+        this.map[x+','+y].passable : false;
   }.bind(level));
 
   var rooms = digger.getRooms();
@@ -183,7 +181,7 @@ var selectWall = function(neighborWallDirections) {
 
 var revealedAndImpassable = function(map, x, y) {
   var tile = map[x + ',' + y];
-  return tile !== undefined && tile.revealed && !tile.passable;
+  return tile.revealed && !tile.passable;
 }
 
 var neighborWalls = function(map, x, y) {
@@ -356,7 +354,7 @@ var Game = {
             else {
               var tile = level.map[x + ',' + y];
               var glyph = '', color = 'white';
-              if (tile != undefined && tile.revealed) {
+              if (tile.revealed) {
                 if (tile.contents != null) {
                   glyph = tile.contents.kind.glyph;
                   color = tile.contents.kind.color;
