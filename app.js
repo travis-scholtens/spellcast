@@ -496,7 +496,7 @@ dropCorpse = function(map, x, y, corpse) {
   while (q.length > 0) {
     var u = q.shift();
     var key = u[0] + ',' + u[1];
-    if (map[key].corpse == null) {
+    if (map[key].passable && map[key].corpse == null) {
       map[key].corpse = corpse;
       return;
     }
