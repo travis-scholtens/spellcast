@@ -584,6 +584,14 @@ Player.prototype.keyPress = function(code, level) {
     Game.engine.unlock();
 }
 
+var levelFor = function(experience) {
+  var i;
+  for (i = 0; i < experienceLevelThresholds.length; i++)
+    if (experience < experienceLevelThresholds[i])
+      break;
+  return i;
+}
+
 Player.prototype.clickRackTile = function(index, map) {
   var result,
       button,
@@ -650,8 +658,11 @@ Player.prototype.clickRackTile = function(index, map) {
                   if (spell.length == 7)
                     score += 50;
                   if (spell in words) {
+                    var previousExperience = player.experience;
                     player.experience += score;
                     Game.attempt.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
+                    if (levelFor(player.experience) > levelFor(previousExperience))
+                      Game.attempt.message('You have improved.');
                   }
                   else
                     Game.attempt.message('Nothing happens.');
