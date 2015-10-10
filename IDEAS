@@ -23,6 +23,8 @@ Collect corpses of dead creatures, make anagrams out of the symbols that represe
   * Can only use full rack?
   * Or allow dropping, but takes a turn?
   * Bingo bonus?
+* No diagonal movement (crossword theme)
+* Other crossword ideas: something about going Down or Across?
 * Minimal
   * Casting spell gains experience
     * Scrabble scoring
@@ -31,6 +33,8 @@ Collect corpses of dead creatures, make anagrams out of the symbols that represe
   * Enemies distributed like Scrabble
     * But floor N only has first N, e.g. first floor has only a's
   * Progressively harder enemies (more damage and/or health)
-  * Healing? Maybe not necessary?
+  * Healing?
+    * Maybe not necessary?
+    * Via bingo?
   * Discards stay where they are, on the floor
   * Finite enemies per floor
