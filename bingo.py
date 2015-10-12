@@ -191,9 +191,9 @@ def experience_after_level():
       total += 50 / levels_per_bingo
     yield l, total
 
-with open('thresholds.js', 'w') as f:
+with open('experience.js', 'w') as f:
   from math import floor
-  f.write('var experienceLevelThresholds = [\n')
+  f.write('var experienceLevelDefinitions = [\n')
   for l, e in [(0, 0)] + sorted(dict(experience_after_level()).items()):
-    f.write("  {},\n".format(floor(e)))
+    f.write('  {{ expThreshold: {} }},\n'.format(floor(e),))
   f.write(']\n')
