@@ -48,8 +48,8 @@ var Attempt = function() {
 
 var _generateMap = function(depth) {
   var level = {};
-  level.width = 128;
-  level.height = 128;
+  level.width = 64;
+  level.height = 64;
   level.radius = Math.sqrt(level.width * level.width + level.height * level.height);
   level.map = {};
   var digger = new ROT.Map.Digger(level.width, level.height);
