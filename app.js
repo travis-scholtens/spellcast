@@ -422,25 +422,11 @@ var Player = function(level, x, y) {
 }
 
 Player.prototype.getSpeed = function() {
-  return this.experience < 10 ? 75 :
-         this.experience < 20 ? 85 :
-         this.experience < 35 ? 95 :
-         this.experience < 55 ? 100 :
-         this.experience < 85 ? 105 :
-         this.experience < 130 ? 110 :
-         this.experience < 200 ? 115 :
-         120;
+  return levelFor(this.experience).speed;
 }
 
 Player.prototype.getHealth = function() {
-  return (this.experience < 10 ? 20 :
-          this.experience < 20 ? 25 :
-          this.experience < 35 ? 30 :
-          this.experience < 55 ? 35 :
-          this.experience < 85 ? 40 :
-          this.experience < 130 ? 45 :
-          this.experience < 200 ? 50 :
-          55) - this.woundedness;
+  return 50 - this.woundedness;
 }
     
 Player.prototype.getX = function() { return this._x; }
@@ -455,7 +441,7 @@ Player.prototype.act = function() {
 
 Player.prototype.attack = function(foe) {
   var damage = Math.min(
-      Math.max(0, Math.floor(ROT.RNG.getNormal(5, 2))),
+      Math.max(0, Math.floor(ROT.RNG.getNormal(levelFor(this.experience).meanDamage, 2))),
       foe.health);
   foe.health -= damage;
   return damage;
@@ -559,8 +545,8 @@ var levelFor = function(experience) {
   var i;
   for (i = 0; i < experienceLevelDefinitions.length; i++)
     if (experience < experienceLevelDefinitions[i].expThreshold)
-      break;
-  return i;
+      return experienceLevelDefinitions[i];
+  return experienceLevelDefinitions[experienceLevelDefinitions.length-1];
 }
 
 Player.prototype.clickRackTile = function(index, map) {
@@ -633,8 +619,10 @@ Player.prototype.clickRackTile = function(index, map) {
                     player.experience += score;
                     Game.attempt.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
-                        experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
+                        experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
+                      player.woundedness = 0;
                       Game.attempt.message('You have improved.');
+                    }
                   }
                   else
                     Game.attempt.message('Nothing happens.');

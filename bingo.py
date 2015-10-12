@@ -191,9 +191,62 @@ def experience_after_level():
       total += 50 / levels_per_bingo
     yield l, total
 
+# How much damage do enemies do?
+#
+# If enemy has health eh, speed es, and does an average of ed damage per attack,
+# and player has speed ps and does pd damage, then it will take
+#   pt = eh/pd
+# player turns to kill, during which it will take
+#   et = pt * es/ps
+# turns of its own, dealing a total of
+#   d = et * ed
+# damage to the player.
+#
+# So the player needs health
+#   ph > eh * es * ed / ps / pd
+# to survive the encounter.
+#
+# So all of these stats are interchangeable, don't need to vary all three.
+
+depth_avg_health = { d: sum([healths[l] * depth_dist[d][l]
+                             for l in depth_dist[d]])
+                     for d in depth_dist }
+
+# for variety, alternate between increasing average attack damage and player speed
+def next_upgrade(target_damage_rate):
+  def upgrade_speed(damage_rate, current_damage, current_speed):
+    return current_damage, max(current_speed + 1, damage_rate/current_damage/target_damage_rate)
+  def upgrade_damage(damage_rate, current_damage, current_speed):
+    return max(current_damage + 0.1, damage_rate/current_speed/target_damage_rate), current_speed
+  while True:
+    yield upgrade_damage
+    yield upgrade_speed
+
+def stats_at_level():
+  # these are constant
+  damage_per_enemy_dealt_hit = 3
+  enemy_speed = 100
+
+  # these will get buffed by level gains
+  damage_per_player_dealt_hit = 5
+  player_speed = 75
+
+  # player has 50 health, refilled each experience level, so try to sap 40 of it each level
+  upgrade = next_upgrade(40)
+  for l in range(1, 31):
+    enemy_health = depth_avg_health[l if l in depth_avg_health else max(depth_avg_health.keys())]
+    damage_to_player_rate = enemies_per_level * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
+    damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
+    # yield the current stats at this level
+    yield damage_per_player_dealt_hit, player_speed
+    # upgrade to the next level
+    damage_per_player_dealt_hit, player_speed = next(upgrade)(damage_to_player_rate, damage_per_player_dealt_hit, player_speed)
+
 with open('experience.js', 'w') as f:
+  stats = list(stats_at_level())
   from math import floor
   f.write('var experienceLevelDefinitions = [\n')
   for l, e in [(0, 0)] + sorted(dict(experience_after_level()).items()):
-    f.write('  {{ expThreshold: {} }},\n'.format(floor(e),))
+    damage, speed = stats[l]
+    f.write('  {{ expThreshold: {}, meanDamage: {}, speed: {} }},\n'.format(floor(e), round(damage, 1), floor(speed)))
   f.write(']\n')
