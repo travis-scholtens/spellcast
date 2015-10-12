@@ -56,7 +56,101 @@ frequencies = {
   'z': 1
 }
 
+healths = {
+  'a': 10,
+  'b': 12,
+  'c': 15,
+  'd': 20,
+  'e': 15,
+  'f': 20,
+  'g': 25,
+  'h': 20,
+  'i': 10,
+  'j': 40,
+  'k': 20,
+  'l': 20,
+  'm': 50,
+  'n': 0,
+  'o': 0,
+  'p': 0,
+  'q': 0,
+  'r': 0,
+  's': 0,
+  't': 0,
+  'u': 0,
+  'v': 0,
+  'w': 0,
+  'x': 0,
+  'y': 0,
+  'z': 0
+}
+
+names = {
+  'a': 'ant',
+  'b': 'badger',
+  'c': 'crawler',
+  'd': 'demon',
+  'e': 'elf',
+  'f': 'fury',
+  'g': 'goblin',
+  'h': 'hag',
+  'i': 'imp',
+  'j': 'jabber',
+  'k': 'koala',
+  'l': 'lemur',
+  'm': 'manticore',
+  'n': '?',
+  'o': '?',
+  'p': '?',
+  'q': '?',
+  'r': '?',
+  's': '?',
+  't': '?',
+  'u': '?',
+  'v': '?',
+  'w': '?',
+  'x': '?',
+  'y': '?',
+  'z': '?'
+}
+
+colors = {
+  'a': 'darkred',
+  'b': 'brown',
+  'c': 'yellow',
+  'd': 'red',
+  'e': 'green',
+  'f': 'darkblue',
+  'g': 'darkgreen',
+  'h': 'darkgray',
+  'i': 'lightblue',
+  'j': 'darkbrown',
+  'k': 'lightgray',
+  'l': 'orange',
+  'm': 'darkorange',
+  'n': 'white',
+  'o': 'white',
+  'p': 'white',
+  'q': 'white',
+  'r': 'white',
+  's': 'white',
+  't': 'white',
+  'u': 'white',
+  'v': 'white',
+  'w': 'white',
+  'x': 'white',
+  'y': 'white',
+  'z': 'white'
+}
+
 abcs = 'abcdefghijklmnopqrstuvwxyz'
+
+with open('foes.js', 'w') as f:
+  f.write('var foeKinds = [\n')
+  for glyph in abcs:
+    f.write("    new FoeKind('{}', '{}', '{}', {}, {}, {}),\n".format(
+            glyph, *[d[glyph] for d in (names, colors, healths, values, frequencies)]))
+  f.write(']\n')
 
 bingoes = []
 with open('/tmp/words') as f:

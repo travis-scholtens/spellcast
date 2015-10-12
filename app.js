@@ -84,7 +84,7 @@ var _generateMap = function(depth) {
   level.up = {x: upCenter[0] - 1, y: upCenter[1]};
   level.down = {x: downCenter[0], y: downCenter[1]};
 
-  var kinds = foeDistribution(Game.foeKinds, depth);
+  var kinds = foeDistribution(foeKinds, depth);
   level.foes = [];
   for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
     var loc = this.newBeingLocation(freeCells);
@@ -221,35 +221,6 @@ var Game = {
     rack_size: 6,
     rackTileLocations: {},
 
-    foeKinds: [
-      new FoeKind('a', 'ant', 'darkred', 10, 1, 9),
-      new FoeKind('b', 'badger', 'brown', 12, 3, 2),
-      new FoeKind('c', 'crawler', 'yellow', 15, 3, 2),
-      new FoeKind('d', 'demon', 'red', 20, 2, 4),
-      new FoeKind('e', 'elf', 'green', 15, 1, 12),
-      new FoeKind('f', 'fury', 'darkblue', 20, 4, 2),
-      new FoeKind('g', 'goblin', 'darkgreen', 25, 2, 3),
-      new FoeKind('h', 'hag', 'darkgray', 20, 4, 2),
-      new FoeKind('i', 'imp', 'lightblue', 10, 1, 9),
-      new FoeKind('j', 'jabber', 'darkbrown', 40, 8, 1),
-      new FoeKind('k', 'koala', 'lightgray', 20, 5, 1),
-      new FoeKind('l', 'lemur', 'orange', 20, 1, 4),
-      new FoeKind('m', 'manticore', 'darkorange', 50, 3, 2),
-      new FoeKind('n', '?', 'white', 0, 0, 0),
-      new FoeKind('o', '?', 'white', 0, 0, 0),
-      new FoeKind('p', '?', 'white', 0, 0, 0),
-      new FoeKind('q', '?', 'white', 0, 0, 0),
-      new FoeKind('r', '?', 'white', 0, 0, 0),
-      new FoeKind('s', '?', 'white', 0, 0, 0),
-      new FoeKind('t', '?', 'white', 0, 0, 0),
-      new FoeKind('u', '?', 'white', 0, 0, 0),
-      new FoeKind('v', '?', 'white', 0, 0, 0),
-      new FoeKind('w', '?', 'white', 0, 0, 0),
-      new FoeKind('x', '?', 'white', 0, 0, 0),
-      new FoeKind('y', '?', 'white', 0, 0, 0),
-      new FoeKind('z', '?', 'white', 0, 0, 0),
-    ],
-
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
         var canvas = this.display.getContainer();
@@ -258,11 +229,11 @@ var Game = {
         document.getElementById("main").appendChild(canvas);
 
         this.values = {};
-        for (var i = 0; i < this.foeKinds.length; i++)
-          this.values[this.foeKinds[i].glyph] = this.foeKinds[i].value;
+        for (var i = 0; i < foeKinds.length; i++)
+          this.values[foeKinds[i].glyph] = foeKinds[i].value;
 
         this.glyphKind = {};
-        this.foeKinds.forEach(
+        foeKinds.forEach(
             function(k) {
               this[k.glyph] = k;
             }.bind(this.glyphKind));
