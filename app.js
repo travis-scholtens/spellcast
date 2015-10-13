@@ -243,6 +243,27 @@ var drawMeter = function(display, x, y, dy, rangeLow, rangeHigh, value, glyph, c
   display.draw(x, y, glyph, color);
 }
 
+var wrapMessages = function(messages, width) {
+  var i,
+      prefix = ['>'],
+      tokens,
+      line,
+      indent = ' ',
+      wrapped = [];
+  for (i = 0; i < messages.length; i++) {
+    tokens = prefix.concat(messages[i].split(' '));
+    while (tokens.length > 0) {
+      line = tokens.shift();
+      while (tokens.length > 0 && line.length + tokens[0].length + 1 < width)
+        line = [line, tokens.shift()].join(' ');
+      wrapped.push(line);
+      if (tokens.length > 0)
+        tokens.unshift(indent);
+    }
+  }
+  return wrapped;
+}
+
 var Game = {
     display: null,
     engine: null,
@@ -360,11 +381,12 @@ var Game = {
     _drawWholeMap: function(attempt) {
       var level = attempt.player.level;
       var display = this.display.getOptions();
-      var messageCount = attempt.messages.length;
+      var messages = wrapMessages(attempt.messages, display.width);
+      var messageCount = messages.length;
       for (var i = 0; i < messageCount; i++) {
         for (var y = 0; y < display.width; y++)
           this.display.draw(y, i, '');
-        this.display.drawText(0, i, '> ' + attempt.messages[i]);
+        this.display.drawText(messages[i][0] === ' ' ? 2 : 0, i, messages[i]);
       }
       attempt.messages.length = 0;
       for (var dx = 1; dx < display.width - 1; dx++)
