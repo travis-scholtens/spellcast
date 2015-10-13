@@ -632,7 +632,7 @@ Player.prototype.clickRackTile = function(index, map) {
             if (loc.x == closeButton[i].x && loc.y == closeButton[i].y) {
               for (var j = 0; j < tiles.length; j++) {
                 if (tiles[j].fromRack)
-                  Game.rack.push(tiles[j].glyph);
+                  Game.attempt.rack.push(tiles[j].glyph);
                 else
                   map[Game.player._x + ',' + Game.player._y].corpse = tiles[j].glyph;
               }
