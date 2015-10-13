@@ -361,8 +361,11 @@ var Game = {
       var level = attempt.player.level;
       var display = this.display.getOptions();
       var messageCount = attempt.messages.length;
-      for (var i = 0; i < messageCount; i++)
+      for (var i = 0; i < messageCount; i++) {
+        for (var y = 0; y < display.width; y++)
+          this.display.draw(y, i, '');
         this.display.drawText(0, i, '> ' + attempt.messages[i]);
+      }
       attempt.messages.length = 0;
       for (var dx = 1; dx < display.width - 1; dx++)
         for (var dy = messageCount; dy < display.height - 3; dy++) {
