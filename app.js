@@ -180,7 +180,7 @@ var selectWall = function(neighborWallDirections) {
     case 0b1101: return '\u2563';
     case 0b1110: return '\u2566';
     case 0b1111: return '\u256c';
-    default: return '\u25ef';
+    default: return '\u25cb';
   }
 }
 
