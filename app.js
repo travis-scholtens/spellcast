@@ -57,7 +57,7 @@ var _generateMap = function(depth) {
 
   var digCallback = function(x, y, value) {
       var key = x+","+y;
-      this.map[key] = new Tile(value ? false : '.');
+      this.map[key] = new Tile(value ? false : '\u00b7');
       if (!value)
         freeCells.push(key);
   }
