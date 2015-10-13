@@ -213,6 +213,36 @@ var neighborWalls = function(level, x, y) {
   return directions;
 }
 
+var meterCellEighths = function(rangeLow, rangeHigh, value, scale) {
+  var range = rangeHigh - rangeLow,
+      value = Math.max(0, Math.min(range, value - rangeLow)),
+      totalEighths = Math.round((value/range) * scale * 8),
+      remainder = totalEighths % 8,
+      dividend = (totalEighths - remainder)/8,
+      cells = [],
+      i;
+  for (i = 0; i < dividend; i++)
+    cells.push(8);
+  cells.push(remainder);
+  return cells;
+}
+
+var fractionalBlock = function(eighths) {
+  if (eighths === 0) return '';
+  return String.fromCharCode(0x2580 + eighths);
+}
+
+var drawMeter = function(display, x, y, dy, rangeLow, rangeHigh, value, glyph, color) {
+  var i,
+      j,
+      cells = meterCellEighths(rangeLow, rangeHigh, value, dy);
+  for (i = 0; i < cells.length; i++)
+    display.draw(x, y+dy-i, fractionalBlock(cells[i]), color, 'darkgray');
+  for (j = i; j < dy; j++)
+    display.draw(x, y+dy-j, fractionalBlock(8), 'darkgray');
+  display.draw(x, y, glyph, color);
+}
+
 var Game = {
     display: null,
     engine: null,
@@ -334,7 +364,7 @@ var Game = {
       for (var i = 0; i < messageCount; i++)
         this.display.drawText(0, i, '> ' + attempt.messages[i]);
       attempt.messages.length = 0;
-      for (var dx = 0; dx < display.width; dx++)
+      for (var dx = 1; dx < display.width - 1; dx++)
         for (var dy = messageCount; dy < display.height - 3; dy++) {
           var x = attempt.player.getX() - display.width/2 + dx,
               y = attempt.player.getY() - display.height/2 + dy;
@@ -363,6 +393,17 @@ var Game = {
             }
           }
         }
+      var meterTop = messageCount,
+          meterHeight = display.height - 3 - messageCount - 1;
+      drawMeter(this.display, 0, meterTop, meterHeight,
+                0, 50, 50 - attempt.player.woundedness,
+                '\u2625', 'lightpink');
+      var expLevelIndex = experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
+      drawMeter(this.display, display.width - 1, meterTop, meterHeight,
+                experienceLevelDefinitions[expLevelIndex-1].expThreshold,
+                experienceLevelDefinitions[expLevelIndex].expThreshold,
+                attempt.player.experience,
+                '\u2638', 'lightgreen');
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
     },
 
