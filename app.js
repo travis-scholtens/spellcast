@@ -367,14 +367,16 @@ var Game = {
       for (var dx = 1; dx < display.width - 1; dx++)
         for (var dy = messageCount; dy < display.height - 3; dy++) {
           var x = attempt.player.getX() - display.width/2 + dx,
-              y = attempt.player.getY() - display.height/2 + dy;
+              y = attempt.player.getY() - display.height/2 + dy,
+              glyph = '',
+              color = 'black';
           if ((0 <= x && x < level.width) &&
               (0 <= y && y < level.height)) {
             if (x == attempt.player._x && y == attempt.player._y)
-              this.display.draw(dx, dy, '@', '#ff0');
+              glyph = '@', color = '#ff0';
             else {
               var tile = level.map[x + ',' + y];
-              var glyph = '', color = 'white';
+              glyph = '', color = 'white';
               if (tile.revealed) {
                 if (tile.contents != null) {
                   glyph = tile.contents.kind.glyph;
@@ -389,9 +391,9 @@ var Game = {
                 else
                   glyph = tile.glyph;
               }
-              this.display.draw(dx, dy, glyph, color);
             }
           }
+          this.display.draw(dx, dy, glyph, color);
         }
       var meterTop = messageCount,
           meterHeight = display.height - 3 - messageCount - 1;
