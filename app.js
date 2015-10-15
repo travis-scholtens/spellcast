@@ -671,7 +671,7 @@ Player.prototype.clickRackTile = function(index, map) {
                 if (tiles[j].fromRack)
                   Game.attempt.rack.push(tiles[j].glyph);
                 else
-                  map[Game.player._x + ',' + Game.player._y].corpse = tiles[j].glyph;
+                  map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse = tiles[j].glyph;
               }
               tiles.length = 0;
               clicked = true;
