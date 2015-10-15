@@ -659,7 +659,8 @@ Player.prototype.clickRackTile = function(index, map) {
           result.center.y - height/4,
           this.modalTiles[i].glyph, this.modalTiles[i].color);
     }
-    Game.drawRackTiles();
+    Game.drawRackTiles(
+        Game.attempt.player.level.map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse);
     if (Game.attempt.mode.length > 0)
       Game.attempt.mode.pop();
     Game.attempt.mode.push(function(player, index, tiles, closeButton, actButton) {
