@@ -47,9 +47,14 @@ var Attempt = function() {
 }
 
 var _generateMap = function(depth) {
-  var level = {};
-  level.width = 64;
-  level.height = 64;
+  var level = {},
+      dim = depth == 1 ? 24 :
+            depth == 2 ? 36 :
+            depth == 3 ? 48 :
+            depth == 4 ? 56 :
+            64;
+  level.width = dim;
+  level.height = dim;
   level.radius = Math.sqrt(level.width * level.width + level.height * level.height);
   level.map = {};
   var digger = new ROT.Map.Digger(level.width, level.height);
@@ -86,7 +91,12 @@ var _generateMap = function(depth) {
 
   var kinds = foeDistribution(foeKinds, depth);
   level.foes = [];
-  for (var i = 0; i < ROT.RNG.getUniformInt(12, 18); i++) {
+  var foeLimits = depth == 1 ? [2, 2] :
+              depth == 2 ? [4, 5] :
+              depth == 3 ? [6, 9] :
+              depth == 4 ? [9, 13] :
+              [12, 18];
+  for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
     var foe = new Pedro(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
     level.map[loc.x + ',' + loc.y].contents = foe;

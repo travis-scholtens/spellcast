@@ -170,7 +170,7 @@ depth_avg_value = { d: sum([values[l] * depth_dist[d][l]
                             for l in depth_dist[d]])
                     for d in depth_dist }
 
-enemies_per_level = 10
+enemies_per_level = [None, 2, 4.5, 7.5, 11] + [15] * (30 - 4)
 
 # 100 tiles in Scrabble => ~50 per player, or 7 sets of 7 tiles each game
 # If being "good" means getting one bingo per game, and "expert" means three,
@@ -185,7 +185,7 @@ def experience_after_level():
   total = 0
   for l in range(1, 30):
     old_total = total
-    total += (enemies_per_level *
+    total += (enemies_per_level[l] *
               depth_avg_value[l if l in depth_avg_value else max(depth_avg_value.keys())])
     if (l >= levels_per_bingo):
       total += 50 / levels_per_bingo
@@ -235,7 +235,7 @@ def stats_at_level():
   upgrade = next_upgrade(40)
   for l in range(1, 31):
     enemy_health = depth_avg_health[l if l in depth_avg_health else max(depth_avg_health.keys())]
-    damage_to_player_rate = enemies_per_level * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
+    damage_to_player_rate = enemies_per_level[l] * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
     damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
     # yield the current stats at this level
     yield damage_per_player_dealt_hit, player_speed
