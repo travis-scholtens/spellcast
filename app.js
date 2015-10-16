@@ -26,8 +26,8 @@ var fovFrom = function(level, loc, callback) {
 var revealFrom = function(level, fromLoc) {
   fovFrom(level, fromLoc,
       function(loc) {
-        level.map[loc.x + ',' + loc.y].revealed = true;
-      }.bind(level));
+        this[loc.x + ',' + loc.y].revealed = true;
+      }.bind(level.map));
 }
 
 var Attempt = function() {
@@ -416,6 +416,9 @@ var Game = {
                 if (tile.contents != null) {
                   glyph = tile.contents.kind.glyph;
                   color = tile.contents.kind.color;
+                  if (!tile.contents.revealed)
+                    attempt.player.path.length = 0;
+                  tile.contents.revealed = true;
                 } else if (tile.corpse != null) {
                   glyph = tile.corpse;
                   color = 'darkgray';
@@ -497,6 +500,7 @@ var Player = function(level, x, y) {
     this.modalTiles = [];
     this.experience = 0;
     this.woundedness = 0;
+    this.path = [];
 }
 
 Player.prototype.getSpeed = function() {
@@ -510,11 +514,39 @@ Player.prototype.getHealth = function() {
 Player.prototype.getX = function() { return this._x; }
 Player.prototype.getY = function() { return this._y; }
 
+var walkPath = function(attempt) {
+  var player = attempt.player,
+      path = player.path,
+      loc = path.shift(),
+      level = player.level,
+      map = level.map,
+      tile = map[loc[0] + ',' + loc[1]];
+  if (tile.passable && tile.revealed && tile.contents === null) {
+    player._x = loc[0];
+    player._y = loc[1];
+    if (takeCorpse(map, player._x, player._y, attempt))
+      path.length = 0;
+    if (useStairs(attempt))
+      path.length = 0;
+    revealFrom(player.level, {x: player._x, y: player._y});
+    Game._drawWholeMap(attempt);
+    return true;
+  }
+  return false;
+}
+
 Player.prototype.act = function() {
+  if (this.path.length > 0 && walkPath(Game.attempt)) {
+    var done = null,
+        promise = { then: function(cb) { done = cb; } };
+    setTimeout(function() { done(); }, 10);
+    return promise;
+  } else {
     Game.engine.lock();
     window.addEventListener("keydown", this);
     window.addEventListener("mouseup", this);
     window.addEventListener("touchstart", this);
+  }
 }
 
 Player.prototype.attack = function(foe) {
@@ -523,6 +555,18 @@ Player.prototype.attack = function(foe) {
       foe.health);
   foe.health -= damage;
   return damage;
+}
+
+takeCorpse = function(map, x, y, attempt) {
+  var tile = map[x + ',' + y];
+  if (tile.corpse != null && attempt.rack.length < Game.rack_size) {
+     var name = Game.glyphKind[tile.corpse].name;
+     attempt.rack.push(tile.corpse);
+     tile.corpse = null;
+     Game.attempt.message('You take the ' + name + ' corpse.');
+     return true;
+  }
+  return false;
 }
 
 dropCorpse = function(map, x, y, corpse) {
@@ -546,7 +590,49 @@ dropCorpse = function(map, x, y, corpse) {
         }
   }
 }
-    
+
+var useStairs = function(attempt) {
+  var player = attempt.player,
+      level = player.level,
+      stairLoc;
+  if (player._x == level.down.x && player._y == level.down.y) {
+    player.level = attempt.levelBelow(level);
+    stairLoc = attempt.player.level.up;
+  }
+  else if (player._x == level.up.x && player._y == level.up.y) {
+    player.level = attempt.levelAbove(level);
+    stairLoc = player.level.down;
+  }
+  if (player.level != level) {
+    Game.unschedule(level.foes);
+    Game.schedule(player.level.foes);
+    player._x = stairLoc.x;
+    player._y = stairLoc.y;
+    return true;
+  }
+  return false;
+}
+
+var dealDamage = function(attempt, loc, foe) {
+  var player = attempt.player,
+      level = player.level,
+      map = level.map,
+      foes = level.foes,
+      damage = player.attack(foe),
+      name = Game.glyphKind[foe.kind.glyph].name;
+  if (foe.health == 0) {
+    map[loc.x + ',' + loc.y].contents = null;
+    dropCorpse(map, loc.x, loc.y, foe.kind.glyph);
+    Game.scheduler.remove(foe);
+    foes.splice(foes.indexOf(foe), 1);
+    attempt.message('You kill the ' + name + '!');
+  }
+  else if (damage > 0)
+    attempt.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
+  else
+    attempt.message('You miss the ' + name + '.');
+}
+
 Player.prototype.keyPress = function(code, level) {
     if (Game.attempt.mode.length > 0) return;
 
@@ -572,46 +658,13 @@ Player.prototype.keyPress = function(code, level) {
       return;
 
     var contents = level.map[newKey].contents;
-    if (contents != null) {
-      var damage = this.attack(contents);
-      var name = Game.glyphKind[contents.kind.glyph].name;
-      if (contents.health == 0) {
-        level.map[newKey].contents = null;
-        dropCorpse(level.map, newX, newY, contents.kind.glyph);
-        Game.scheduler.remove(contents);
-        level.foes.splice(level.foes.indexOf(contents), 1);
-        Game.attempt.message('You kill the ' + name + '!');
-      }
-      else if (damage > 0)
-        Game.attempt.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
-      else
-        Game.attempt.message('You miss the ' + name + '.');
-    }
+    if (contents != null)
+      dealDamage(Game.attempt, { x: newX, y: newY }, contents);
     else {
       this._x = newX;
       this._y = newY;
-      var key = this._x + ',' + this._y;
-      if (level.map[key].corpse != null && Game.attempt.rack.length < Game.rack_size) {
-        var name = Game.glyphKind[level.map[key].corpse].name;
-        Game.attempt.rack.push(level.map[key].corpse);
-        level.map[key].corpse = null;
-        Game.attempt.message('You take the ' + name + ' corpse.');
-      }
-      var stairLoc;
-      if (this._x == level.down.x && this._y == level.down.y) {
-        this.level = Game.attempt.levelBelow(level);
-        stairLoc = this.level.up;
-      }
-      else if (this._x == level.up.x && this._y == level.up.y) {
-        this.level = Game.attempt.levelAbove(level);
-        stairLoc = this.level.down;
-      }
-      if (this.level != level) {
-        Game.unschedule(level.foes);
-        Game.schedule(this.level.foes);
-        this._x = stairLoc.x;
-        this._y = stairLoc.y;
-      }
+      takeCorpse(level.map, this._x, this._y, Game.attempt);
+      useStairs(Game.attempt);
       revealFrom(this.level, {x: this._x, y: this._y});
     }
     window.removeEventListener("keydown", this);
@@ -717,6 +770,17 @@ Player.prototype.clickRackTile = function(index, map) {
   }
 }
 
+var screenLocToTile = function(loc, player) {
+  var display = Game.display.getOptions(),
+      x = player.getX() - display.width/2 + loc.x,
+      y = player.getY() - display.height/2 + loc.y;
+  return { x: x, y: y };
+}
+
+var distance = function(a, b) {
+  return { dx: a.x - b.x, dy: a.y - b.y };
+}
+
 Player.prototype.click = function(loc) {
   if (loc.y == 24) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
@@ -724,6 +788,24 @@ Player.prototype.click = function(loc) {
       this.clickRackTile(rackTileIndex, this.level.map);
   } else if (Game.attempt.mode.length > 0)
     Game.attempt.mode[Game.attempt.mode.length-1](loc);
+  else {
+    var tileLoc = screenLocToTile(loc, this),
+        tile = this.level.map[tileLoc.x + ',' + tileLoc.y];
+    if (tile !== undefined && tile.revealed && tile.passable) {
+      var playerLoc = { x: this._x, y: this._y },
+          dist = distance(tileLoc, playerLoc);
+      if ((Math.abs(dist.dx) + Math.abs(dist.dy)) == 1 && tile.contents !== null)
+        dealDamage(Game.attempt, tileLoc, tile.contents);
+      else {
+        this.path = pathTo(this.level, playerLoc, tileLoc);
+        walkPath(Game.attempt);
+      }
+      window.removeEventListener("keydown", this);
+      window.removeEventListener("mouseup", this);
+      window.removeEventListener("touchstart", this);
+      Game.engine.unlock();
+    }
+  }
 }
 
 ROT.Display.prototype.eventToClientPosition = function(e) {
@@ -771,16 +853,33 @@ var Pedro = function(kind, level, x, y) {
     this.kind = kind;
     this.health = kind.health;
     this.lastSawPlayer = null;
+    this.revealed = false;
 }
 
 Pedro.prototype.getSpeed = function() { return 100; }
 
-var pathTo = function(map, fromLoc, toLoc) {
+var locationsMatch = function(a, b) {
+  var dist = distance(a, b);
+  return dist.dx == 0 && dist.dy == 0;
+}
+
+var pathTo = function(level, fromLoc, toLoc) {
+  // avoid stairs unless they are the origin or destination
+  var avoid = [];
+  if (!locationsMatch(level.down, fromLoc) && !locationsMatch(level.down, toLoc))
+    avoid.push(level.down);
+  if (!locationsMatch(level.up, fromLoc) && !locationsMatch(level.up, toLoc))
+    avoid.push(level.up);
   var astar = new ROT.Path.AStar(toLoc.x, toLoc.y,
-      function(x, y) {
-        var key = x + ',' + y;
-        return key in this && this[key].passable;
-      }.bind(map),
+      function(map, avoid) {
+        return function(x, y) {
+          for (var i = 0; i < avoid.length; i++)
+            if (avoid[i].x == x && avoid[i].y == y)
+              return false;
+          var key = x + ',' + y;
+          return key in map && map[key].passable;
+        };
+      }(level.map, avoid),
       {topology:4});
 
   var path = [];
@@ -790,6 +889,11 @@ var pathTo = function(map, fromLoc, toLoc) {
       }.bind(path));
 
   path.shift();
+  return path;
+}
+
+var nextStepTo = function(level, fromLoc, toLoc) {
+  var path = pathTo(level, fromLoc, toLoc);
   return path.length > 0 ?
          { x: path[0][0], y: path[0][1] } :
          null;
@@ -809,6 +913,7 @@ Pedro.prototype.attack = function(player) {
   var damage = Math.min(
       Math.max(0, Math.floor(ROT.RNG.getNormal(3, 1))),
       player.getHealth());
+  player.path.length = 0;
   player.woundedness += damage;
   return damage;
 }
@@ -818,7 +923,7 @@ Pedro.prototype.act = function() {
       playerLoc = { x: Game.attempt.player._x, y: Game.attempt.player._y },
       inView = locInView(this.level, loc, playerLoc),
       nextLoc = inView || this.lastSawPlayer !== null ?
-          pathTo(this.level.map, loc, playerLoc) : null;
+          nextStepTo(this.level, loc, playerLoc) : null;
 
   if (inView)
     this.lastSawPlayer = 0;
