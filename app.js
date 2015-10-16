@@ -579,6 +579,7 @@ Player.prototype.keyPress = function(code, level) {
         level.map[newKey].contents = null;
         dropCorpse(level.map, newX, newY, contents.kind.glyph);
         Game.scheduler.remove(contents);
+        level.foes.splice(level.foes.indexOf(contents), 1);
         Game.attempt.message('You kill the ' + name + '!');
       }
       else if (damage > 0)
