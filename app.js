@@ -18,7 +18,7 @@ var foeDistribution = function(kinds, depth) {
 
 var fovFrom = function(level, loc, callback) {
   level.fov.compute(loc.x, loc.y, level.radius,
-      function(x, y, _, _) {
+      function(x, y, _1, _2) {
         callback({x: x, y: y});
       });
 }
@@ -171,25 +171,25 @@ Attempt.prototype.message = function(text) {
 }
 
 var Direction = {
-  N: 0b0001,
-  E: 0b0010,
-  S: 0b0100,
-  W: 0b1000
+  N: 1, // 0b0001
+  E: 2, // 0b0010
+  S: 4, // 0b0100
+  W: 8  // 0b1000
 }
 
 var selectWall = function(neighborWallDirections) {
   switch (neighborWallDirections) {
-    case 0b0011: return '\u255a';
-    case 0b0101: return '\u2551';
-    case 0b0110: return '\u2554';
-    case 0b0111: return '\u2560';
-    case 0b1001: return '\u255d';
-    case 0b1010: return '\u2550';
-    case 0b1011: return '\u2569';
-    case 0b1100: return '\u2557';
-    case 0b1101: return '\u2563';
-    case 0b1110: return '\u2566';
-    case 0b1111: return '\u256c';
+    case  3 /*0b0011*/: return '\u255a';
+    case  5 /*0b0101*/: return '\u2551';
+    case  6 /*0b0110*/: return '\u2554';
+    case  7 /*0b0111*/: return '\u2560';
+    case  9 /*0b1001*/: return '\u255d';
+    case 10 /*0b1010*/: return '\u2550';
+    case 11 /*0b1011*/: return '\u2569';
+    case 12 /*0b1100*/: return '\u2557';
+    case 13 /*0b1101*/: return '\u2563';
+    case 14 /*0b1110*/: return '\u2566';
+    case 15 /*0b1111*/: return '\u256c';
     default: return '\u25cb';
   }
 }
