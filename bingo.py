@@ -152,13 +152,6 @@ with open('foes.js', 'w') as f:
             glyph, *[d[glyph] for d in (names, colors, healths, values, frequencies)]))
   f.write(']\n')
 
-bingoes = []
-with open('/tmp/words') as f:
-  for word in f:
-    word = word.strip()
-    if len(word) == 7:
-      bingoes.append((abcs.index(sorted(word)[-1]), word))
-
 def dist(letters):
   total = sum([frequencies[l] for l in letters])
   return { l: frequencies[l]/total for l in letters }
