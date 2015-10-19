@@ -517,10 +517,10 @@ Player.prototype.getY = function() { return this._y; }
 var walkPath = function(attempt) {
   var player = attempt.player,
       path = player.path,
-      loc = path.shift(),
+      loc = path.length > 0 ? path.shift() : null,
       level = player.level,
       map = level.map,
-      tile = map[loc[0] + ',' + loc[1]];
+      tile = loc != null ? map[loc[0] + ',' + loc[1]] : { passable: false };
   if (tile.passable && tile.revealed && tile.contents === null) {
     player._x = loc[0];
     player._y = loc[1];
