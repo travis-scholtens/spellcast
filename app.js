@@ -747,7 +747,7 @@ Player.prototype.clickRackTile = function(index, map) {
                   }
                   if (spell.length == 7)
                     score += 50;
-                  if (spell in words) {
+                  if (spell in words_am || spell in words_nz) {
                     var previousExperience = player.experience;
                     player.experience += score;
                     Game.attempt.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
