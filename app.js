@@ -39,7 +39,9 @@ var Attempt = function() {
 
   for (var i = 0; i < 26; i++)
     this.levels.push(_generateMap(i+1));
-  this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y);
+  var colorBase = ROT.RNG.getUniformInt(80, 255);
+  this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y,
+      'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
   revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
 
   Game.scheduler.add(this.player, true);
@@ -408,7 +410,7 @@ var Game = {
           if ((0 <= x && x < level.width) &&
               (0 <= y && y < level.height)) {
             if (x == attempt.player._x && y == attempt.player._y)
-              glyph = '@', color = '#ff0';
+              glyph = '@', color = attempt.player.color;
             else {
               var tile = level.map[x + ',' + y];
               glyph = '', color = 'white';
@@ -492,10 +494,11 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(level, x, y) {
+var Player = function(level, x, y, color) {
     this.level = level;
     this._x = x;
     this._y = y;
+    this.color = color;
     this.lastClickEvent = 0;
     this.modalTiles = [];
     this.experience = 0;
