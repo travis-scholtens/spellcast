@@ -793,11 +793,13 @@ Player.prototype.click = function(loc) {
         tile = this.level.map[tileLoc.x + ',' + tileLoc.y];
     if (tile !== undefined && tile.revealed && tile.passable) {
       var playerLoc = { x: this._x, y: this._y },
-          dist = distance(tileLoc, playerLoc);
-      if ((Math.abs(dist.dx) + Math.abs(dist.dy)) == 1 && tile.contents !== null)
-        dealDamage(Game.attempt, tileLoc, tile.contents);
+          path = pathTo(this.level, playerLoc, tileLoc),
+          nextLoc = path.length > 0 ? { x: path[0][0], y: path[0][1] } : null,
+          nextTile = nextLoc != null ? this.level.map[nextLoc.x + ',' + nextLoc.y] : null;
+      if (nextTile !== null && nextTile.contents !== null)
+        dealDamage(Game.attempt, nextLoc, nextTile.contents);
       else {
-        this.path = pathTo(this.level, playerLoc, tileLoc);
+        this.path = path;
         walkPath(Game.attempt);
       }
       window.removeEventListener("keydown", this);
