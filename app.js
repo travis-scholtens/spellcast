@@ -16,15 +16,15 @@ var foeDistribution = function(kinds, depth) {
   return dist;
 };
 
-var fovFrom = function(level, loc, callback) {
-  level.fov.compute(loc.x, loc.y, level.radius,
+var fovFrom = function(level, loc, radius, callback) {
+  level.fov.compute(loc.x, loc.y, radius,
       function(x, y, _1, _2) {
         callback({x: x, y: y});
       });
 }
 
 var revealFrom = function(level, fromLoc) {
-  fovFrom(level, fromLoc,
+  fovFrom(level, fromLoc, 7,
       function(loc) {
         this[loc.x + ',' + loc.y].revealed = true;
       }.bind(level.map));
@@ -906,7 +906,7 @@ var nextStepTo = function(level, fromLoc, toLoc) {
 
 var locInView = function(level, fromLoc, targetLoc) {
   var canSeeTarget = false;
-  fovFrom(level, fromLoc,
+  fovFrom(level, fromLoc, level.radius,
       function(loc) {
         if (loc.x == this.x && loc.y == this.y)
           canSeeTarget = true;
