@@ -1,4 +1,5 @@
 values = {
+  '.': 0,
   'a': 1,
   'b': 3,
   'c': 3,
@@ -28,6 +29,7 @@ values = {
 }
 
 frequencies = {
+  '.': 2,
   'a': 9,
   'b': 2,
   'c': 2,
@@ -115,6 +117,7 @@ names = {
 }
 
 colors = {
+  '.': 'gray',
   'a': 'darkred',
   'b': 'brown',
   'c': 'yellow',
@@ -151,12 +154,14 @@ with open('foes.js', 'w') as f:
     f.write("    new FoeKind('{}', '{}', '{}', {}, {}, {}),\n".format(
             glyph, *[d[glyph] for d in (names, colors, healths, values, frequencies)]))
   f.write(']\n')
+  f.write("var shapeshifter = new FoeKind('.', 'shapeshifter', 'gray', undefined, {}, {});\n".format(
+          *[d['.'] for d in (values, frequencies)]))
 
 def dist(letters):
   total = sum([frequencies[l] for l in letters])
   return { l: frequencies[l]/total for l in letters }
 
-depth_dist = { i+1: dist(abcs[0:i+1])
+depth_dist = { i+1: dist(abcs[0:i+1] + ('.' if i > 0 else ''))
     for i in range(len(abcs)) }
 
 depth_avg_value = { d: sum([values[l] * depth_dist[d][l]
@@ -201,7 +206,7 @@ def experience_after_level():
 #
 # So all of these stats are interchangeable, don't need to vary all three.
 
-depth_avg_health = { d: sum([healths[l] * depth_dist[d][l]
+depth_avg_health = { d: sum([(healths[l] if l in healths else max(healths.values())) * depth_dist[d][l]
                              for l in depth_dist[d]])
                      for d in depth_dist }
 

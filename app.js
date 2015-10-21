@@ -49,11 +49,11 @@ var Attempt = function() {
 }
 
 var _generateMap = function(depth) {
-  var level = {},
-      dim = depth == 1 ? 24 :
-            depth == 2 ? 36 :
-            depth == 3 ? 48 :
-            depth == 4 ? 56 :
+  var level = { depth: depth },
+      dim = level.depth == 1 ? 24 :
+            level.depth == 2 ? 36 :
+            level.depth == 3 ? 48 :
+            level.depth == 4 ? 56 :
             64;
   level.width = dim;
   level.height = dim;
@@ -91,12 +91,17 @@ var _generateMap = function(depth) {
   level.up = {x: upCenter[0] - 1, y: upCenter[1]};
   level.down = {x: downCenter[0], y: downCenter[1]};
 
-  var kinds = foeDistribution(foeKinds, depth);
+  var kinds = foeDistribution(foeKinds, level.depth);
+  if (level.depth > 1) {
+    var totalTiles = foeKinds.slice(0, level.depth).map(function(k){return k.frequency;}).reduce(function(a,b){return a+b;}),
+        blankScale = shapeshifter.frequency / (totalTiles + shapeshifter.frequency);
+    kinds[shapeshifter.glyph] = shapeshifter.frequency * blankScale;
+  }
   level.foes = [];
-  var foeLimits = depth == 1 ? [2, 2] :
-              depth == 2 ? [4, 5] :
-              depth == 3 ? [6, 9] :
-              depth == 4 ? [9, 13] :
+  var foeLimits = level.depth == 1 ? [2, 2] :
+              level.depth == 2 ? [4, 5] :
+              level.depth == 3 ? [6, 9] :
+              level.depth == 4 ? [9, 13] :
               [12, 18];
   for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
@@ -140,15 +145,21 @@ var drawRackTile = function(display, x, y, glyph, color) {
       digits;
   if (value < 10) {
     ax = x - 0.5;
-    digits = [value];
+    digits = value > 0 ? [value] : [];
   } else {
     ax = x - 0.75;
     digits = [Math.floor(value/10), value % 10];
   }
-  display.drawText(ax, y, rackTileText(glyph, color));
-  for (var i = 0; i < digits.length; i++)
-    display.drawText(ax + 0.75 * i, y,
-        rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
+  if (glyph === '.')
+    display.draw(ax, y, '', 'black', color);
+  else
+    display.drawText(ax, y, rackTileText(glyph, color));
+  if (digits.length > 0)
+    for (var i = 0; i < digits.length; i++)
+      display.drawText(ax + 0.75 * i, y,
+          rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
+  else
+    display.draw(ax + 1, y, '', 'black', color);
 }
 
 Attempt.prototype.message = function(text) {
@@ -274,7 +285,7 @@ var Game = {
         canvas.style.height = '100%';
         document.getElementById("main").appendChild(canvas);
 
-        this.values = {};
+        this.values = {'.': 0};
         for (var i = 0; i < foeKinds.length; i++)
           this.values[foeKinds[i].glyph] = foeKinds[i].value;
 
@@ -283,6 +294,7 @@ var Game = {
             function(k) {
               this[k.glyph] = k;
             }.bind(this.glyphKind));
+        this.glyphKind[shapeshifter.glyph] = shapeshifter;
 
         this.scheduler = new ROT.Scheduler.Speed();
 
@@ -399,13 +411,13 @@ var Game = {
               glyph = '', color = 'white';
               if (tile.revealed) {
                 if (tile.contents != null) {
-                  glyph = tile.contents.kind.glyph;
-                  color = tile.contents.kind.color;
+                  glyph = tile.contents.effectiveKind().glyph;
+                  color = tile.contents.effectiveKind().color;
                   if (!tile.contents.revealed)
                     attempt.player.path.length = 0;
                   tile.contents.revealed = true;
                 } else if (tile.corpse != null) {
-                  glyph = tile.corpse;
+                  glyph = tile.corpse == '.' ? '\u25a1' : tile.corpse;
                   color = 'darkgray';
                 } else if (x == level.up.x && y == level.up.y)
                   glyph = '\u261d';
@@ -605,7 +617,7 @@ var dealDamage = function(attempt, loc, foe) {
       map = level.map,
       foes = level.foes,
       damage = player.attack(foe),
-      name = Game.glyphKind[foe.kind.glyph].name;
+      name = Game.glyphKind[foe.effectiveKind().glyph].name;
   if (foe.health == 0) {
     map[loc.x + ',' + loc.y].contents = null;
     dropCorpse(map, loc.x, loc.y, foe.kind.glyph);
@@ -665,6 +677,32 @@ var levelFor = function(experience) {
     if (experience < experienceLevelDefinitions[i].expThreshold)
       return experienceLevelDefinitions[i];
   return experienceLevelDefinitions[experienceLevelDefinitions.length-1];
+}
+
+var findWordWithBlank = function(word) {
+  var matches = [],
+      pattern = new RegExp('^' + word + '$'),
+      parenthesizeBlankMatch = function(word, entry) {
+        var result = '';
+        for (var i = 0; i < word.length; i++)
+          result += word[i] == '.' ? '(' + entry[i] + ')' : entry[i];
+        return result;
+      },
+      pushMatches = function(word, pattern, list) {
+        for (var entry in list)
+          if (list.hasOwnProperty(entry) && entry.match(pattern))
+            matches.push(parenthesizeBlankMatch(word, entry));
+      };
+  pushMatches(word, pattern, words_am);
+  pushMatches(word, pattern, words_nz);
+  matches.sort();
+  return matches[0];
+}
+
+var checkWord = function(word) {
+  return word.indexOf('.') >= 0 ?
+      findWordWithBlank(word) :
+      words_am || word in words_nz ? word : false;
 }
 
 Player.prototype.clickRackTile = function(index, map) {
@@ -733,10 +771,11 @@ Player.prototype.clickRackTile = function(index, map) {
                   }
                   if (spell.length == 7)
                     score += 50;
-                  if (spell in words_am || spell in words_nz) {
+                  var word = checkWord(spell);
+                  if (word) {
                     var previousExperience = player.experience;
                     player.experience += score;
-                    Game.attempt.message('You cast ' + spell.toUpperCase() + '. %c{green}(+' + score + ')');
+                    Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{green}(+' + score + ')');
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
                       player.woundedness = 0;
@@ -839,12 +878,24 @@ var Pedro = function(kind, level, x, y) {
     this._x = x;
     this._y = y;
     this.kind = kind;
-    this.health = kind.health;
     this.lastSawPlayer = null;
     this.revealed = false;
+    if (this.kind === shapeshifter) {
+      this.shiftedKind = this.chooseShiftedKind();
+      this.health = this.shiftedKind.health;
+    } else
+      this.health = kind.health;
 }
 
 Pedro.prototype.getSpeed = function() { return 100; }
+
+Pedro.prototype.chooseShiftedKind = function() {
+  return Game.glyphKind[ROT.RNG.getWeightedValue(foeDistribution(foeKinds, this.level.depth))];
+}
+
+Pedro.prototype.effectiveKind = function() {
+  return this.kind !== shapeshifter ? this.kind : this.shiftedKind;
+}
 
 var locationsMatch = function(a, b) {
   var dist = distance(a, b);
@@ -923,16 +974,27 @@ Pedro.prototype.act = function() {
   if (nextLoc == null)
     return;
 
+  if (this.kind === shapeshifter &&
+      this.health < levelFor(Game.attempt.player.experience).meanDamage) {
+    var kind = this.chooseShiftedKind();
+    if (this.shiftedKind !== kind) {
+      Game.attempt.message('The shapeshifter changes form, from ' + this.shiftedKind.name +
+          ' to ' + kind.name + ', regenerating its health! %c{green}(+' + (kind.health - this.health) + ')');
+      this.shiftedKind = kind;
+      this.health = this.shiftedKind.health;
+    }
+  }
+
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
     var damage = this.attack(Game.attempt.player);
     if (Game.attempt.player.getHealth() == 0) {
-      Game.attempt.message('The ' + this.kind.name + ' kills you!');
+      Game.attempt.message('The ' + this.effectiveKind().name + ' kills you!');
       Game.newAttempt();
     }
     else if (damage > 0)
-      Game.attempt.message('The ' + this.kind.name + ' hits you! %c{red}(-' + damage + ')');
+      Game.attempt.message('The ' + this.effectiveKind().name + ' hits you! %c{red}(-' + damage + ')');
     else
-      Game.attempt.message('The ' + this.kind.name + ' misses you.');
+      Game.attempt.message('The ' + this.effectiveKind().name + ' misses you.');
   } else {
     if (this.level.map[nextLoc.x + ',' + nextLoc.y].contents != null)
       return;
