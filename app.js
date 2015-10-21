@@ -145,23 +145,6 @@ var drawRackTile = function(display, x, y, glyph, color) {
     ax = x - 0.75;
     digits = [Math.floor(value/10), value % 10];
   }
-  display.drawText(ax, y, this.rackTileText(glyph, color));
-  for (var i = 0; i < digits.length; i++)
-    display.drawText(ax + 0.75 * i, y,
-        rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
-}
-
-var drawRackTile = function(display, x, y, glyph, color) {
-  var value = Game.values[glyph],
-      ax,
-      digits;
-  if (value < 10) {
-    ax = x - 0.5;
-    digits = [value];
-  } else {
-    ax = x - 0.75;
-    digits = [Math.floor(value/10), value % 10];
-  }
   display.drawText(ax, y, rackTileText(glyph, color));
   for (var i = 0; i < digits.length; i++)
     display.drawText(ax + 0.75 * i, y,
