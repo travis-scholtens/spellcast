@@ -494,7 +494,6 @@ var Player = function(level, x, y, color) {
     this._x = x;
     this._y = y;
     this.color = color;
-    this.lastClickEvent = 0;
     this.modalTiles = [];
     this.experience = 0;
     this.woundedness = 0;
@@ -543,7 +542,7 @@ Player.prototype.act = function() {
     Game.engine.lock();
     window.addEventListener("keydown", this);
     window.addEventListener("mouseup", this);
-    window.addEventListener("touchstart", this);
+    window.addEventListener("touchend", this);
   }
 }
 
@@ -836,9 +835,9 @@ Player.prototype.click = function(loc) {
 }
 
 ROT.Display.prototype.eventToClientPosition = function(e) {
-  if (e.touches) {
-    var x = e.touches[0].clientX;
-    var y = e.touches[0].clientY;
+  if (e.changedTouches) {
+    var x = e.changedTouches[0].clientX;
+    var y = e.changedTouches[0].clientY;
   } else {
     var x = e.clientX;
     var y = e.clientY;
@@ -862,15 +861,13 @@ Player.prototype.handleEvent = function(e) {
     this.keyPress(e.keyCode, this.level);
   else {
     var now = new Date().getTime();
-    if (now - this.lastClickEvent < 1000)
-      return;
-    this.lastClickEvent = now;
     var coords = Game.display.eventToClientPosition(e);
     if (coords[0] >= 0 && coords[1] >= 0)
       this.click({x: coords[0], y: coords[1]});
   }
   if (Game.attempt.mode.length == 0)
     Game._drawWholeMap(Game.attempt);
+  e.preventDefault();
 }
     
 var Pedro = function(kind, level, x, y) {
