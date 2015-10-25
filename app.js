@@ -30,22 +30,106 @@ var revealFrom = function(level, fromLoc) {
       }.bind(level.map));
 }
 
-var Attempt = function() {
-  this.levels = [];
-  this.player = null;
+var Attempt = function(state) {
+  if (state)
+    this.restore(state);
+  else {
+    this.levels = [];
+    this.player = null;
+    this.rack = [];
+  
+    for (var i = 0; i < 26; i++)
+      this.levels.push(_generateMap(i+1));
+    var colorBase = ROT.RNG.getUniformInt(80, 255);
+    this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y,
+        'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
+    revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
+  }
   this.messages = [];
-  this.rack = [];
   this.mode = [];
-
-  for (var i = 0; i < 26; i++)
-    this.levels.push(_generateMap(i+1));
-  var colorBase = ROT.RNG.getUniformInt(80, 255);
-  this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y,
-      'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
-  revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
 
   Game.scheduler.add(this.player, true);
   Game.schedule(this.player.level.foes);
+}
+
+var objectState = function(obj, filterFn, mapFn) {
+  var state = [];
+  for (var k in obj)
+    if (obj.hasOwnProperty(k) && filterFn(obj[k]))
+      state.push({k: k, v: mapFn(obj[k])});
+  return state;
+}
+
+var listState = function(list) {
+  var state = [];
+  for (var i = 0; i < list.length; i++)
+    state.push({k: i, v: list[i].state()});
+  return state;
+}
+
+var restoreObject = function(obj, state, Class, parentState) {
+  for (var i = 0; i < state.length; i++)
+    obj[state[i].k] = Class !== undefined ? new Class(state[i].v, parentState) : state[i].v;
+}
+
+var restoreMap = function(map, tileData, mapFn) {
+  for (var i = 0; i < tileData.length; i++)
+    map[tileData[i].k] = mapFn(tileData[i].v);
+}
+
+var fov = function(level) {
+  return new ROT.FOV.PreciseShadowcasting(function(x, y) {
+    return x >= 0 && x < this.width && y >= 0 && y < this.height ?
+        this.map[x+','+y] && this.map[x+','+y].passable : false;
+  }.bind(level))
+}
+
+Attempt.prototype.restore = function(state) {
+  this.levels = [];
+  for (var i = 0; i < state.levels.length; i++) {
+    this.levels.push(state.levels[i]);
+    this.levels[i].map = {};
+    restoreMap(this.levels[i].map, state.levels[i].tileData,
+               function(t) {
+                 var tile = new Tile(t.c in Game.glyphKind || t.c == '\u00b7' ? '\u00b7' : false);
+                 if (t.c in Game.glyphKind)
+                   tile.corpse = t.c;
+                 else
+                   tile.glyph = t.c;
+                 tile.revealed = t.r;
+                 return tile;
+               });
+    this.levels[i].fov = fov(this.levels[i]);
+    this.levels[i].foes = [];
+    restoreObject(this.levels[i].foes, state.levels[i].foeData, Pedro, this.levels[i]);
+    for (var j = 0; j < this.levels[i].foes.length; j++)
+      this.levels[i].map[this.levels[i].foes[j]._x + ',' + this.levels[i].foes[j]._y].contents =
+          this.levels[i].foes[j];
+  }
+  this.player = new Player({ level: this.levels[state.player.levelIndex], state: state.player });
+  this.rack = state.rack;
+}
+
+Attempt.prototype.state = function() {
+  var state = { levels: [], player: this.player.state(), rack: this.rack };
+  for (var i = 0; i < this.levels.length; i++)
+    state.levels.push({
+        depth: this.levels[i].depth,
+        width: this.levels[i].width,
+        height: this.levels[i].height,
+        radius: this.levels[i].radius,
+        up: this.levels[i].up,
+        down: this.levels[i].down,
+        tileData: objectState(this.levels[i].map,
+                              function(t) { return t.glyph !== null; },
+                              function(t) {
+                                return {
+                                  c: t.corpse !== null ? t.corpse : t.glyph,
+                                  r: t.revealed };
+                              }),
+        foeData: listState(this.levels[i].foes)
+        });
+  return state;
 }
 
 var _generateMap = function(depth) {
@@ -75,10 +159,7 @@ var _generateMap = function(depth) {
       if (isWall(level, x, y))
         level.map[x+','+y].glyph = selectWall(neighborWalls(level, x, y));
 
-  level.fov = new ROT.FOV.PreciseShadowcasting(function(x, y) {
-    return x >= 0 && x < this.width && y >= 0 && y < this.height ?
-        this.map[x+','+y].passable : false;
-  }.bind(level));
+  level.fov = fov(level);
 
   var rooms = digger.getRooms();
   var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
@@ -300,14 +381,24 @@ var Game = {
 
         this.engine = new ROT.Engine(this.scheduler);
 
-        this.newAttempt();
+        var serializedState = localStorage.spellyGameState,
+            state = serializedState ? JSON.parse(serializedState) : undefined;
+        if (state)
+          ROT.RNG.setState(state.rng);
+        this.newAttempt(state ? state.attempt : undefined);
         this.engine.start();
     },
 
-    newAttempt: function() {
+    save: function() {
+      localStorage.spellyGameState = JSON.stringify({
+          rng: ROT.RNG.getState(),
+          attempt: this.attempt.state() });
+    },
+
+    newAttempt: function(state) {
       this.engine.lock();
       this.scheduler.clear();
-      this.attempt = new Attempt();
+      this.attempt = new Attempt(state);
       this._drawWholeMap(this.attempt);
       this.engine.unlock();
     },
@@ -409,7 +500,7 @@ var Game = {
             else {
               var tile = level.map[x + ',' + y];
               glyph = '', color = 'white';
-              if (tile.revealed) {
+              if (tile && tile.revealed) {
                 if (tile.contents != null) {
                   glyph = tile.contents.effectiveKind().glyph;
                   color = tile.contents.effectiveKind().color;
@@ -489,15 +580,38 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(level, x, y, color) {
-    this.level = level;
+var Player = function(levelOrStateAndLevel, x, y, color) {
+  if (!('depth' in levelOrStateAndLevel)) {
+    this.restore(levelOrStateAndLevel.state);
+    this.level = levelOrStateAndLevel.level;
+  } else {
+    this.level = levelOrStateAndLevel;
     this._x = x;
     this._y = y;
     this.color = color;
-    this.modalTiles = [];
     this.experience = 0;
     this.woundedness = 0;
-    this.path = [];
+  }
+  this.modalTiles = [];
+  this.path = [];
+}
+
+Player.prototype.restore = function(state) {
+  this._x = state.x;
+  this._y = state.y;
+  this.color = state.color;
+  this.experience = state.experience;
+  this.woundedness = state.woundedness;
+}
+
+Player.prototype.state = function() {
+  return {
+      x: this._x,
+      y: this._y,
+      color: this.color,
+      experience: this.experience,
+      woundedness: this.woundedness,
+      levelIndex: this.level.depth - 1 };
 }
 
 Player.prototype.getSpeed = function() {
@@ -539,6 +653,7 @@ Player.prototype.act = function() {
     setTimeout(function() { done(); }, 10);
     return promise;
   } else {
+    Game.save();
     Game.engine.lock();
     window.addEventListener("keydown", this);
     window.addEventListener("mouseup", this);
@@ -788,8 +903,10 @@ Player.prototype.clickRackTile = function(index, map) {
                 clicked = true;
                 break;
               }
-          if (clicked)
+          if (clicked) {
             Game.attempt.mode.pop();
+            Game.save();
+          }
         }; }(this, index, this.modalTiles, result.closeButton, result.actButton));
   }
 }
@@ -870,18 +987,48 @@ Player.prototype.handleEvent = function(e) {
   e.preventDefault();
 }
     
-var Pedro = function(kind, level, x, y) {
+var Pedro = function(kindOrState, level, x, y) {
+  if (kindOrState.__proto__ !== FoeKind.prototype) {
+    this.restore(kindOrState);
+    this.level = level;
+  }
+  else {
     this.level = level;
     this._x = x;
     this._y = y;
-    this.kind = kind;
+    this.kind = kindOrState;
     this.lastSawPlayer = null;
     this.revealed = false;
     if (this.kind === shapeshifter) {
       this.shiftedKind = this.chooseShiftedKind();
       this.health = this.shiftedKind.health;
     } else
-      this.health = kind.health;
+      this.health = this.kind.health;
+  }
+}
+
+Pedro.prototype.restore = function(state) {
+  this._x = state.x;
+  this._y = state.y;
+  this.kind = Game.glyphKind[state.kindGlyph];
+  if (this.kind === shapeshifter)
+    this.shiftedKind = Game.glyphKind[state.shiftedKindGlyph];
+  this.lastSawPlayer = state.lastSawPlayer;
+  this.revealed = state.revealed;
+  this.health = state.health;
+}
+
+Pedro.prototype.state = function() {
+  var state = {
+      x: this._x,
+      y: this._y,
+      kindGlyph: this.kind.glyph,
+      lastSawPlayer: this.lastSawPlayer,
+      revealed: this.revealed,
+      health: this.health };
+  if (this.kind === shapeshifter)
+    state.shiftedKindGlyph = this.shiftedKind.glyph;
+  return state;
 }
 
 Pedro.prototype.getSpeed = function() { return 100; }
