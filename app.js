@@ -922,17 +922,16 @@ var distance = function(a, b) {
   return { dx: a.x - b.x, dy: a.y - b.y };
 }
 
-Player.prototype.click = function(loc) {
+Player.prototype.click = function(loc, tileLoc) {
   if (loc.y == 24) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
       this.clickRackTile(rackTileIndex, this.level.map);
   } else if (Game.attempt.mode.length > 0)
     Game.attempt.mode[Game.attempt.mode.length-1](loc);
-  else {
-    var tileLoc = screenLocToTile(loc, this),
-        tile = this.level.map[tileLoc.x + ',' + tileLoc.y];
-    if (tile !== undefined && tile.revealed && tile.passable) {
+  else if (tileLoc) {
+    var tile = this.level.map[tileLoc.x + ',' + tileLoc.y];
+    if (tile.revealed) {
       var playerLoc = { x: this._x, y: this._y },
           path = pathTo(this.level, playerLoc, tileLoc),
           nextLoc = path.length > 0 ? { x: path[0][0], y: path[0][1] } : null,
@@ -951,14 +950,9 @@ Player.prototype.click = function(loc) {
   }
 }
 
-ROT.Display.prototype.eventToClientPosition = function(e) {
-  if (e.changedTouches) {
-    var x = e.changedTouches[0].clientX;
-    var y = e.changedTouches[0].clientY;
-  } else {
-    var x = e.clientX;
-    var y = e.clientY;
-  }
+ROT.Display.prototype.eventToClientPosition = function(clientLoc) {
+  var x = clientLoc.x,
+      y = clientLoc.y;
 
   var rect = this._context.canvas.getBoundingClientRect();
   x -= rect.left;
@@ -973,14 +967,80 @@ ROT.Display.prototype.eventToClientPosition = function(e) {
   return this._backend.eventToPosition(x, y);
 }
 
+var clientDimensionToTile = function(
+    playerLoc, displaySize, clientLoc, clientBound, canvasSize, clientSize, spacing) {
+  return playerLoc - (displaySize/2) +
+      Math.floor((clientLoc - clientBound) * canvasSize / clientSize / spacing);
+}
+
+var clientCoords = function(e) {
+  return e.changedTouches ?
+      { x: e.changedTouches[0].clientX,
+        y: e.changedTouches[0].clientY } :
+      { x: e.clientX,
+        y: e.clientY };
+}
+
+var dist2 = function(a, b) {
+  var dist = distance(a, b);
+  return dist.dx * dist.dx + dist.dy * dist.dy;
+}
+
+var tileDimensionToClient = function(
+    playerLoc, displaySize, tileLoc, clientBound, canvasSize, clientSize, spacing) {
+  return (tileLoc + 0.5 - playerLoc + displaySize/2) * spacing * clientSize / canvasSize + clientBound;
+}
+
+var tileCoordsToClient = function(tileLoc, player, display) {
+  var displayOptions = display.getOptions(),
+      canvas = display._context.canvas,
+      clientBounds = canvas.getBoundingClientRect();
+  return {
+      x: tileDimensionToClient(player._x, displayOptions.width, tileLoc.x,
+                               clientBounds.left, canvas.width, canvas.clientWidth,
+                               display._backend._spacingX),
+      y: tileDimensionToClient(player._y, displayOptions.height, tileLoc.y,
+                               clientBounds.top, canvas.height, canvas.clientHeight,
+                               display._backend._spacingY) };
+}
+
+var getTileClickCoords = function(clientLoc, player, display) {
+  var displayOptions = display.getOptions(),
+      canvas = display._context.canvas,
+      clientBounds = canvas.getBoundingClientRect(),
+      tileLoc = {
+          x: clientDimensionToTile(player._x, displayOptions.width, clientLoc.x, 
+                                   clientBounds.left, canvas.width, canvas.clientWidth,
+                                   display._backend._spacingX),
+          y: clientDimensionToTile(player._y, displayOptions.height, clientLoc.y, 
+                                   clientBounds.top, canvas.height, canvas.clientHeight,
+                                   display._backend._spacingY) },
+      map = player.level.map,
+      dx, dy, loc, key, candidateClientLoc,
+      candidates = [];
+  for (dx = -1; dx <= 1; dx++)
+    for (dy = -1; dy <= 1; dy++) {
+      loc = { x: tileLoc.x + dx,
+              y: tileLoc.y + dy },
+          key = loc.x + ',' + loc.y;
+      if (key in map && map[key].passable) {
+        candidateClientLoc = tileCoordsToClient(loc, player, display);
+        candidates.push([loc, dist2(clientLoc, candidateClientLoc)]);
+      }
+    }
+  candidates.sort(function(a,b) { return a[1] - b[1]; });
+  return candidates.length ? candidates[0][0] : undefined;
+}
+
 Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
     this.keyPress(e.keyCode, this.level);
   else {
-    var now = new Date().getTime();
-    var coords = Game.display.eventToClientPosition(e);
+    var clientLoc = clientCoords(e);
+    var coords = Game.display.eventToClientPosition(clientLoc);
     if (coords[0] >= 0 && coords[1] >= 0)
-      this.click({x: coords[0], y: coords[1]});
+      this.click({x: coords[0], y: coords[1]},
+                 getTileClickCoords(clientLoc, this, Game.display));
   }
   if (Game.attempt.mode.length == 0)
     Game._drawWholeMap(Game.attempt);
