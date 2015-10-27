@@ -479,16 +479,22 @@ var Game = {
     _drawWholeMap: function(attempt) {
       var level = attempt.player.level;
       var display = this.display.getOptions();
+      for (var y = 0; y < display.width; y++)
+        this.display.draw(y, 0, '');
+      this.display.drawText(0, 0, 'D: ' + attempt.player.level.depth);
+      var levelText = 'L: ' +
+          experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
+      this.display.drawText(display.width - levelText.length, 0, levelText);
       var messages = wrapMessages(attempt.messages, display.width);
       var messageCount = messages.length;
       for (var i = 0; i < messageCount; i++) {
         for (var y = 0; y < display.width; y++)
-          this.display.draw(y, i, '');
-        this.display.drawText(messages[i][0] === ' ' ? 2 : 0, i, messages[i]);
+          this.display.draw(y, i + 1, '');
+        this.display.drawText(messages[i][0] === ' ' ? 2 : 0, i + 1, messages[i]);
       }
       attempt.messages.length = 0;
       for (var dx = 1; dx < display.width - 1; dx++)
-        for (var dy = messageCount; dy < display.height - 3; dy++) {
+        for (var dy = messageCount + 1; dy < display.height - 3; dy++) {
           var x = attempt.player.getX() - display.width/2 + dx,
               y = attempt.player.getY() - display.height/2 + dy,
               glyph = '',
@@ -521,8 +527,8 @@ var Game = {
           }
           this.display.draw(dx, dy, glyph, color);
         }
-      var meterTop = messageCount,
-          meterHeight = display.height - 3 - messageCount - 1;
+      var meterTop = messageCount + 1,
+          meterHeight = display.height - 3 - messageCount - 2;
       drawMeter(this.display, 0, meterTop, meterHeight,
                 0, 50, 50 - attempt.player.woundedness,
                 '\u2625', 'lightpink');
