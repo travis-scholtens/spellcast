@@ -37,6 +37,7 @@ var Attempt = function(state) {
     this.levels = [];
     this.player = null;
     this.rack = [];
+    this.spellsCast = [];
   
     for (var i = 0; i < 26; i++)
       this.levels.push(_generateMap(i+1));
@@ -108,10 +109,17 @@ Attempt.prototype.restore = function(state) {
   }
   this.player = new Player({ level: this.levels[state.player.levelIndex], state: state.player });
   this.rack = state.rack;
+  this.spellsCast = state.c.map(function(s) {
+    return { tiles: s[0], depth: s[1] };
+  });
 }
 
 Attempt.prototype.state = function() {
-  var state = { levels: [], player: this.player.state(), rack: this.rack };
+  var state = { levels: [], player: this.player.state(), rack: this.rack,
+      c: this.spellsCast.map(function(s) {
+           return [s.tiles, s.depth];
+         })
+      };
   for (var i = 0; i < this.levels.length; i++)
     state.levels.push({
         depth: this.levels[i].depth,
@@ -383,6 +391,8 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
+        if (state.v !== 0)
+          state = null;
         if (state)
           ROT.RNG.setState(state.rng);
         this.newAttempt(state ? state.attempt : undefined);
@@ -391,6 +401,7 @@ var Game = {
 
     save: function() {
       localStorage.spellyGameState = JSON.stringify({
+          v: 0,
           rng: ROT.RNG.getState(),
           attempt: this.attempt.state() });
     },
@@ -897,6 +908,7 @@ Player.prototype.clickRackTile = function(index, map) {
                   if (word) {
                     var previousExperience = player.experience;
                     player.experience += score;
+                    Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth });
                     Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{green}(+' + score + ')');
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
