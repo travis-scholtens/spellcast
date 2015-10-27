@@ -824,7 +824,7 @@ var findWordWithBlank = function(word) {
 var checkWord = function(word) {
   return word.indexOf('.') >= 0 ?
       findWordWithBlank(word) :
-      words_am || word in words_nz ? word : false;
+      word in words_am || word in words_nz ? word : false;
 }
 
 Player.prototype.clickRackTile = function(index, map) {
