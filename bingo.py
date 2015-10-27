@@ -125,7 +125,7 @@ colors = {
   'e': 'green',
   'f': 'darkblue',
   'g': 'darkgreen',
-  'h': 'darkyellow',
+  'h': 'orange',
   'i': 'blue',
   'j': 'darkbrown',
   'k': 'darkseagreen',
