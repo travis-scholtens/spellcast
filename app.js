@@ -650,7 +650,9 @@ Player.prototype.act = function() {
   if (this.path.length > 0 && walkPath(Game.attempt)) {
     var done = null,
         promise = { then: function(cb) { done = cb; } };
-    setTimeout(function() { done(); }, 10);
+    setTimeout( function() {
+      Game._drawWholeMap(Game.attempt);
+      done(); }, 10);
     return promise;
   } else {
     Game.save();
