@@ -359,6 +359,12 @@ var wrapMessages = function(messages, width) {
   return wrapped;
 }
 
+var handle = function(e) {
+  if (Game.attempt && Game.attempt.player && Game.attempt.player.acting)
+    Game.attempt.player.handleEvent(e);
+  e.preventDefault();
+}
+
 var Game = {
     display: null,
     engine: null,
@@ -373,6 +379,10 @@ var Game = {
         canvas.style.width = '100%';
         canvas.style.height = '100%';
         document.getElementById("main").appendChild(canvas);
+
+        window.addEventListener("keydown", handle);
+        window.addEventListener("mouseup", handle);
+        window.addEventListener("touchend", handle);
 
         this.values = {'.': 0};
         for (var i = 0; i < foeKinds.length; i++)
@@ -611,6 +621,7 @@ var Player = function(levelOrStateAndLevel, x, y, color) {
   }
   this.modalTiles = [];
   this.path = [];
+  this.acting = false;
 }
 
 Player.prototype.restore = function(state) {
@@ -674,9 +685,7 @@ Player.prototype.act = function() {
   } else {
     Game.save();
     Game.engine.lock();
-    window.addEventListener("keydown", this);
-    window.addEventListener("mouseup", this);
-    window.addEventListener("touchend", this);
+    this.acting = true;
   }
 }
 
@@ -798,9 +807,7 @@ Player.prototype.keyPress = function(code, level) {
       useStairs(Game.attempt);
       revealFrom(this.level, {x: this._x, y: this._y});
     }
-    window.removeEventListener("keydown", this);
-    window.removeEventListener("mouseup", this);
-    window.removeEventListener("touchstart", this);
+    this.acting = false;
     Game.engine.unlock();
 }
 
@@ -962,9 +969,7 @@ Player.prototype.click = function(loc, tileLoc) {
         this.path = path;
         walkPath(Game.attempt);
       }
-      window.removeEventListener("keydown", this);
-      window.removeEventListener("mouseup", this);
-      window.removeEventListener("touchstart", this);
+      this.acting = false;
       Game.engine.unlock();
     }
   }
@@ -1064,7 +1069,6 @@ Player.prototype.handleEvent = function(e) {
   }
   if (Game.attempt.mode.length == 0)
     Game._drawWholeMap(Game.attempt);
-  e.preventDefault();
 }
     
 var Pedro = function(kindOrState, level, x, y) {
