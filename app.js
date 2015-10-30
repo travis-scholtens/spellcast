@@ -140,6 +140,26 @@ Attempt.prototype.state = function() {
   return state;
 }
 
+Attempt.prototype.levelState = function(i) {
+  var state = {
+      depth: this.levels[i].depth,
+      width: this.levels[i].width,
+      height: this.levels[i].height,
+      radius: this.levels[i].radius,
+      up: this.levels[i].up,
+      down: this.levels[i].down,
+      tileData: objectState(this.levels[i].map,
+                            function(t) { return t.glyph !== null; },
+                            function(t) {
+                              return {
+                                c: t.corpse !== null ? t.corpse : t.glyph,
+                                r: t.revealed };
+                            }),
+      foeData: listState(this.levels[i].foes)
+      };
+  return state;
+}
+
 var _generateMap = function(depth) {
   var level = { depth: depth },
       dim = level.depth == 1 ? 24 :
@@ -410,16 +430,14 @@ var Game = {
     },
 
     save: function() {
-      var t0 = new Date().getTime(),
-          state = {
-              v: 0,
-              rng: ROT.RNG.getState(),
-              attempt: this.attempt.state() },
+      var i = this.attempt.player.level.depth-1,
+          t0 = new Date().getTime(),
+          state = this.attempt.levelState(i),
           t1 = new Date().getTime(),
           str = JSON.stringify(state),
           t2 = new Date().getTime(),
           t3;
-      localStorage.spellyGameState = str;
+      localStorage['spellyLevelState' + i] = str;
       t3 = new Date().getTime();
       this.display.drawText(1, 22, (t1 - t0) + ' ' + (t2 - t1) + ' ' + (t3 - t2));
     },
