@@ -410,10 +410,18 @@ var Game = {
     },
 
     save: function() {
-      localStorage.spellyGameState = JSON.stringify({
-          v: 0,
-          rng: ROT.RNG.getState(),
-          attempt: this.attempt.state() });
+      var t0 = new Date().getTime(),
+          state = {
+              v: 0,
+              rng: ROT.RNG.getState(),
+              attempt: this.attempt.state() },
+          t1 = new Date().getTime(),
+          str = JSON.stringify(state),
+          t2 = new Date().getTime(),
+          t3;
+      localStorage.spellyGameState = str;
+      t3 = new Date().getTime();
+      this.display.drawText(1, 22, (t1 - t0) + ' ' + (t2 - t1) + ' ' + (t3 - t2));
     },
 
     newAttempt: function(state) {
