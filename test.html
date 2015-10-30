@@ -12,14 +12,36 @@
         <link rel="apple-touch-icon" sizes="152x152" href="icon_152.png">
         <link rel="manifest" href="manifest.json">
         <title>Test</title>
+        <link rel="stylesheet" href="font.css">
         <script type="text/javascript" src="experience.js"></script>
         <script type="text/javascript" src="rot.js"></script>
         <script type="text/javascript" src="app.js"></script>
         <script type="text/javascript" src="foes.js"></script>
         <script type="text/javascript" src="words_am.js"></script>
         <script type="text/javascript" src="words_nz.js"></script>
+        <script type="text/javascript">
+          var fontDivWidth;
+
+          document.addEventListener('DOMContentLoaded', function() {
+            var fontDiv = document.getElementById('font');
+            fontDivWidth = fontDiv.offsetWidth;
+            fontDiv.style.fontFamily = 'SpellyFreeMono, serif';
+
+            isFontLoaded();
+           });
+
+           function isFontLoaded() {
+             if (document.getElementById('font').offsetWidth != fontDivWidth)
+               Game.init();
+             else
+               setTimeout(isFontLoaded, 10);
+           }
+        </script>
     </head>
-    <body onload="Game.init();">
+    <body>
         <div id="main" style="position: absolute; width: 95%; height: 95%;"></div>
+        <div id="font" style="visibility: hidden; whitespace: nowrap; position: absolute; font-family: serif;">
+          lolololololololololololololololololol
+        </div>
     </body>
 </html>

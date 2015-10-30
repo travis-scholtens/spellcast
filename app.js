@@ -362,7 +362,7 @@ var selectWall = function(neighborWallDirections) {
     case 13 /*0b1101*/: return '\u2563';
     case 14 /*0b1110*/: return '\u2566';
     case 15 /*0b1111*/: return '\u256c';
-    default: return '\u25cb';
+    default: return '\u25a2';
   }
 }
 
@@ -482,7 +482,7 @@ var Game = {
     completedAt: 0,
 
     init: function() {
-        this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
+        this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, fontFamily: 'SpellyFreeMono', spacing: 1});
         var canvas = this.display.getContainer();
         canvas.style.width = '100%';
         canvas.style.height = '100%';
@@ -721,13 +721,13 @@ var Game = {
           meterHeight = display.height - 3 - messageCount - 2;
       drawMeter(this.display, 0, meterTop, meterHeight,
                 0, 50, 50 - attempt.player.woundedness,
-                '\u2625', 'lightpink');
+                '\u2665', 'lightpink');
       var expLevelIndex = experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
       drawMeter(this.display, display.width - 1, meterTop, meterHeight,
                 experienceLevelDefinitions[expLevelIndex-1].expThreshold,
                 experienceLevelDefinitions[expLevelIndex].expThreshold,
                 attempt.player.experience,
-                '\u2638', 'lightgreen');
+                '\u26a1', 'lightgreen');
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
     },
 
