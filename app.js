@@ -39,8 +39,10 @@ var Attempt = function(state) {
     this.rack = [];
     this.spellsCast = [];
   
-    for (var i = 0; i < 26; i++)
+    for (var i = 0; i < 26; i++) {
       this.levels.push(_generateMap(i+1));
+      localStorage['spellyLevelState' + i] = JSON.stringify(this.levelState(i));
+    }
     var colorBase = ROT.RNG.getUniformInt(80, 255);
     this.player = new Player(this.levels[0], this.levels[0].up.x + 2, this.levels[0].up.y,
         'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
@@ -48,9 +50,6 @@ var Attempt = function(state) {
   }
   this.messages = [];
   this.mode = [];
-
-  Game.scheduler.add(this.player, true);
-  Game.schedule(this.player.level.foes);
 }
 
 var objectState = function(obj, filterFn, mapFn) {
@@ -87,27 +86,7 @@ var fov = function(level) {
 
 Attempt.prototype.restore = function(state) {
   this.levels = [];
-  for (var i = 0; i < state.levels.length; i++) {
-    this.levels.push(state.levels[i]);
-    this.levels[i].map = {};
-    restoreMap(this.levels[i].map, state.levels[i].tileData,
-               function(t) {
-                 var tile = new Tile(t.c in Game.glyphKind || t.c == '\u00b7' ? '\u00b7' : false);
-                 if (t.c in Game.glyphKind)
-                   tile.corpse = t.c;
-                 else
-                   tile.glyph = t.c;
-                 tile.revealed = t.r;
-                 return tile;
-               });
-    this.levels[i].fov = fov(this.levels[i]);
-    this.levels[i].foes = [];
-    restoreObject(this.levels[i].foes, state.levels[i].foeData, Pedro, this.levels[i]);
-    for (var j = 0; j < this.levels[i].foes.length; j++)
-      this.levels[i].map[this.levels[i].foes[j]._x + ',' + this.levels[i].foes[j]._y].contents =
-          this.levels[i].foes[j];
-  }
-  this.player = new Player({ level: this.levels[state.player.levelIndex], state: state.player });
+  this.player = new Player(state.player);
   this.rack = state.rack;
   this.spellsCast = state.c.map(function(s) {
     return { tiles: s[0], depth: s[1] };
@@ -115,29 +94,33 @@ Attempt.prototype.restore = function(state) {
 }
 
 Attempt.prototype.state = function() {
-  var state = { levels: [], player: this.player.state(), rack: this.rack,
+  return { player: this.player.state(), rack: this.rack,
       c: this.spellsCast.map(function(s) {
            return [s.tiles, s.depth];
          })
       };
-  for (var i = 0; i < this.levels.length; i++)
-    state.levels.push({
-        depth: this.levels[i].depth,
-        width: this.levels[i].width,
-        height: this.levels[i].height,
-        radius: this.levels[i].radius,
-        up: this.levels[i].up,
-        down: this.levels[i].down,
-        tileData: objectState(this.levels[i].map,
-                              function(t) { return t.glyph !== null; },
-                              function(t) {
-                                return {
-                                  c: t.corpse !== null ? t.corpse : t.glyph,
-                                  r: t.revealed };
-                              }),
-        foeData: listState(this.levels[i].foes)
-        });
-  return state;
+}
+
+Attempt.prototype.restoreLevel = function(state) {
+  var i = state.depth - 1;
+  this.levels[i] = state;
+  this.levels[i].map = {};
+  restoreMap(this.levels[i].map, state.tileData,
+             function(t) {
+               var tile = new Tile(t.c in Game.glyphKind || t.c == '\u00b7' ? '\u00b7' : false);
+               if (t.c in Game.glyphKind)
+                 tile.corpse = t.c;
+               else
+                 tile.glyph = t.c;
+               tile.revealed = t.r;
+               return tile;
+             });
+  this.levels[i].fov = fov(this.levels[i]);
+  this.levels[i].foes = [];
+  restoreObject(this.levels[i].foes, state.foeData, Pedro, this.levels[i]);
+  for (var j = 0; j < this.levels[i].foes.length; j++)
+    this.levels[i].map[this.levels[i].foes[j]._x + ',' + this.levels[i].foes[j]._y].contents =
+        this.levels[i].foes[j];
 }
 
 Attempt.prototype.levelState = function(i) {
@@ -421,7 +404,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state.v !== 0)
+        if (state && state.v !== 1)
           state = null;
         if (state)
           ROT.RNG.setState(state.rng);
@@ -432,22 +415,47 @@ var Game = {
     save: function() {
       var i = this.attempt.player.level.depth-1,
           t0 = new Date().getTime(),
-          state = this.attempt.levelState(i),
+          gameState = { v: 1,
+                        rng: ROT.RNG.getState(),
+                        attempt: this.attempt.state() },
           t1 = new Date().getTime(),
-          str = JSON.stringify(state),
+          levelState = this.attempt.levelState(i),
           t2 = new Date().getTime(),
-          t3;
-      localStorage['spellyLevelState' + i] = str;
-      t3 = new Date().getTime();
-      this.display.drawText(1, 22, (t1 - t0) + ' ' + (t2 - t1) + ' ' + (t3 - t2));
+          gameStr = JSON.stringify(gameState),
+          t3 = new Date().getTime(),
+          levelStr = JSON.stringify(levelState),
+          t4, t5;
+      localStorage['spellyGameState'] = gameStr;
+      t4 = new Date().getTime();
+      localStorage['spellyLevelState' + i] = levelStr;
+      t5 = new Date().getTime();
+      this.display.drawText(1, 22, (t1 - t0) + ' ' +
+                                   (t2 - t1) + ' ' +
+                                   (t3 - t2) + ' ' +
+                                   (t4 - t3) + ' ' +
+                                   (t5 - t4));
     },
 
     newAttempt: function(state) {
       this.engine.lock();
       this.scheduler.clear();
       this.attempt = new Attempt(state);
+      if (state) {
+        var i = 0;
+        while (true) {
+          var key = 'spellyLevelState' + i;
+          if (!(key in localStorage))
+            break;
+          this.attempt.restoreLevel(JSON.parse(localStorage[key]));
+          i++;
+        }
+        this.attempt.player.level = this.attempt.levels[state.player.levelIndex];
+      }
       this._drawWholeMap(this.attempt);
       this.engine.unlock();
+
+      Game.scheduler.add(this.attempt.player, true);
+      Game.schedule(this.attempt.player.level.foes);
     },
 
     schedule: function(foes) {
@@ -633,12 +641,11 @@ var Tile = function(glyph) {
   this.corpse = null;
 };
 
-var Player = function(levelOrStateAndLevel, x, y, color) {
-  if (!('depth' in levelOrStateAndLevel)) {
-    this.restore(levelOrStateAndLevel.state);
-    this.level = levelOrStateAndLevel.level;
+var Player = function(levelOrState, x, y, color) {
+  if (!('depth' in levelOrState)) {
+    this.restore(levelOrState);
   } else {
-    this.level = levelOrStateAndLevel;
+    this.level = levelOrState;
     this._x = x;
     this._y = y;
     this.color = color;
@@ -762,10 +769,12 @@ var useStairs = function(attempt) {
       level = player.level,
       stairLoc;
   if (player._x == level.down.x && player._y == level.down.y) {
+    Game.save();
     player.level = attempt.levelBelow(level);
     stairLoc = attempt.player.level.up;
   }
   else if (player._x == level.up.x && player._y == level.up.y) {
+    Game.save();
     player.level = attempt.levelAbove(level);
     stairLoc = player.level.down;
   }
@@ -774,6 +783,7 @@ var useStairs = function(attempt) {
     Game.schedule(player.level.foes);
     player._x = stairLoc.x;
     player._y = stairLoc.y;
+    Game.save();
     return true;
   }
   return false;
