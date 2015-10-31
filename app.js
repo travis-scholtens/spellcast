@@ -414,26 +414,14 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          t0 = new Date().getTime(),
           gameState = { v: 1,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
-          t1 = new Date().getTime(),
           levelState = this.attempt.levelState(i),
-          t2 = new Date().getTime(),
           gameStr = JSON.stringify(gameState),
-          t3 = new Date().getTime(),
-          levelStr = JSON.stringify(levelState),
-          t4, t5;
+          levelStr = JSON.stringify(levelState);
       localStorage['spellyGameState'] = gameStr;
-      t4 = new Date().getTime();
       localStorage['spellyLevelState' + i] = levelStr;
-      t5 = new Date().getTime();
-      this.display.drawText(1, 22, (t1 - t0) + ' ' +
-                                   (t2 - t1) + ' ' +
-                                   (t3 - t2) + ' ' +
-                                   (t4 - t3) + ' ' +
-                                   (t5 - t4));
     },
 
     newAttempt: function(state) {
