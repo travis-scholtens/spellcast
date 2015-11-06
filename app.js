@@ -375,15 +375,14 @@ var clearSavedGame = function() {
 }
 
 var handle = function(e) {
-  if (Game.attempt && Game.attempt.player) {
-    if (Game.attempt.player.getHealth() <= 0 &&
-        (new Date().getTime() - Game.playerDiedAt) > 1000) {
-      clearSavedGame();
-      Game.newAttempt();
-      Game.engine.unlock();
-    } else if (Game.attempt.player.acting)
+  if (!Game.attempt ||
+      (Game.attempt.player.getHealth() <= 0 &&
+       (new Date().getTime() - Game.playerDiedAt) > 1000)) {
+    clearSavedGame();
+    Game.newAttempt();
+    Game.engine.unlock();
+  } else if (Game.attempt.player.getHealth() > 0 && Game.attempt.player.acting)
       Game.attempt.player.handleEvent(e);
-  }
   e.preventDefault();
 }
 
@@ -424,12 +423,12 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v !== 1)
-          state = null;
-        if (state)
+        if (state && state.v === 1) {
           ROT.RNG.setState(state.rng);
-        this.newAttempt(state ? state.attempt : undefined);
-        this.engine.start();
+          this.newAttempt(state.attempt);
+          this.engine.unlock();
+        } else
+          this.showTutorial();
     },
 
     save: function() {
@@ -539,9 +538,27 @@ var Game = {
       return result;
     },
 
-    showGameSummary: function(attempt) {
+    showTextScreen: function(lines) {
       var display = this.display.getOptions(),
-          player = attempt.player,
+          y = 0,
+          i;
+      this.display.clear();
+      for (i = 0; i < lines.length; i++)
+        y += this.display.drawText(0, y, lines[i], display.width) + 1;
+    },
+
+    showTutorial: function() {
+      this.showTextScreen([
+          'Fight monsters',
+          'Use their corpses to cast spells for more power',
+          'Start with the spell "AA" (a kind of lava)',
+          '7-corpse spells get a bonus',
+          'Cast the spell of "YENDOR" to win'
+      ].map(function(line) { return '\u2022 ' + line; }));
+    },
+
+    showGameSummary: function(attempt) {
+      var player = attempt.player,
           level = player.level,
           bestSpellIndex = -1,
           lines = [
@@ -559,12 +576,8 @@ var Game = {
                   bestSpellIndex >= 0 ? [
                       'Best spell: ' +
                           checkWord(attempt.spellsCast[bestSpellIndex].tiles).toUpperCase() + ' (' +
-                          spellValue(attempt.spellsCast[bestSpellIndex].tiles) + ')' ] : []),
-          y = 0,
-          i;
-      this.display.clear();
-      for (i = 0; i < lines.length; i++)
-        y += this.display.drawText(0, y, lines[i], display.width) + 1;
+                          spellValue(attempt.spellsCast[bestSpellIndex].tiles) + ')' ] : []);
+      this.showTextScreen(lines);
     },
 
     _drawWholeMap: function(attempt) {
