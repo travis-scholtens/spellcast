@@ -34,6 +34,8 @@ var Attempt = function(state) {
   if (state)
     this.restore(state);
   else {
+    this.ascended = false;
+    this.complete = false;
     this.levels = [];
     this.player = null;
     this.rack = [];
@@ -85,6 +87,8 @@ var fov = function(level) {
 }
 
 Attempt.prototype.restore = function(state) {
+  this.ascended = state.a;
+  this.complete = state.f;
   this.levels = [];
   this.player = new Player(state.player);
   this.rack = state.rack;
@@ -95,6 +99,8 @@ Attempt.prototype.restore = function(state) {
 
 Attempt.prototype.state = function() {
   return { player: this.player.state(), rack: this.rack,
+      a: this.ascended,
+      f: this.complete,
       c: this.spellsCast.map(function(s) {
            return [s.tiles, s.depth];
          })
@@ -376,12 +382,12 @@ var clearSavedGame = function() {
 
 var handle = function(e) {
   if (!Game.attempt ||
-      (Game.attempt.player.getHealth() <= 0 &&
-       (new Date().getTime() - Game.playerDiedAt) > 1000)) {
+      (Game.attempt.complete &&
+       (new Date().getTime() - Game.completedAt) > 1000)) {
     clearSavedGame();
     Game.newAttempt();
     Game.engine.unlock();
-  } else if (Game.attempt.player.getHealth() > 0 && Game.attempt.player.acting)
+  } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting)
       Game.attempt.player.handleEvent(e);
   e.preventDefault();
 }
@@ -393,7 +399,7 @@ var Game = {
     attempt: null,
     rack_size: 6,
     rackTileLocations: {},
-    playerDiedAt: 0,
+    completedAt: 0,
 
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
@@ -562,7 +568,7 @@ var Game = {
           level = player.level,
           bestSpellIndex = -1,
           lines = [
-              (player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth,
+              (attempt.ascended ? 'Won at' : player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth,
               'Spells cast: ' + attempt.spellsCast.length,
               'Total value: ' +
                   attempt.spellsCast.reduce(
@@ -757,7 +763,10 @@ var walkPath = function(attempt) {
 }
 
 Player.prototype.act = function() {
-  if (this.path.length > 0 && walkPath(Game.attempt)) {
+  if (Game.attempt.complete) {
+    Game.engine.lock();
+    Game.showGameSummary(Game.attempt);
+  } else if (this.path.length > 0 && walkPath(Game.attempt)) {
     var done = null,
         promise = { then: function(cb) { done = cb; } };
     setTimeout( function() {
@@ -927,7 +936,7 @@ var findWordWithBlank = function(word) {
 var checkWord = function(word) {
   return word.indexOf('.') >= 0 ?
       findWordWithBlank(word) :
-      word in words_am || word in words_nz ? word : false;
+      word == 'yendor' || word in words_am || word in words_nz ? word : false;
 }
 
 var spellValue = function(spell) {
@@ -1012,6 +1021,12 @@ Player.prototype.clickRackTile = function(index, map) {
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
                       player.woundedness = 0;
                       Game.attempt.message('You have improved.');
+                    }
+                    if (word == 'yendor') {
+                      Game.attempt.ascended = true;
+                      Game.attempt.complete = true;
+                      Game.completedAt = new Date().getTime();
+                      Game.showGameSummary(Game.attempt);
                     }
                   }
                   else
@@ -1158,7 +1173,7 @@ Player.prototype.handleEvent = function(e) {
       this.click({x: coords[0], y: coords[1]},
                  getTileClickCoords(clientLoc, this, Game.display));
   }
-  if (Game.attempt.mode.length == 0 && Game.attempt.player.getHealth() > 0)
+  if (Game.attempt.mode.length == 0 && !Game.attempt.complete)
     Game._drawWholeMap(Game.attempt);
 }
     
@@ -1307,8 +1322,10 @@ Pedro.prototype.act = function() {
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
     var damage = this.attack(Game.attempt.player);
     if (Game.attempt.player.getHealth() == 0) {
+      Game.attempt.complete = true;
+      Game.save();
       Game.engine.lock();
-      Game.playerDiedAt = new Date().getTime();
+      Game.completedAt = new Date().getTime();
       Game.showGameSummary(Game.attempt);
     }
     else if (damage > 0)
