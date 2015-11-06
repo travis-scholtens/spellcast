@@ -362,9 +362,28 @@ var wrapMessages = function(messages, width) {
   return wrapped;
 }
 
+var clearSavedGame = function() {
+  var i = 0, key;
+  delete localStorage.spellyGameState;
+  while (true) {
+    key = 'spellyLevelState' + i;
+    if (!(key in localStorage))
+      break;
+    delete localStorage[key];
+    i++;
+  }
+}
+
 var handle = function(e) {
-  if (Game.attempt && Game.attempt.player && Game.attempt.player.acting)
-    Game.attempt.player.handleEvent(e);
+  if (Game.attempt && Game.attempt.player) {
+    if (Game.attempt.player.getHealth() <= 0 &&
+        (new Date().getTime() - Game.playerDiedAt) > 1000) {
+      clearSavedGame();
+      Game.newAttempt();
+      Game.engine.unlock();
+    } else if (Game.attempt.player.acting)
+      Game.attempt.player.handleEvent(e);
+  }
   e.preventDefault();
 }
 
@@ -375,6 +394,7 @@ var Game = {
     attempt: null,
     rack_size: 6,
     rackTileLocations: {},
+    playerDiedAt: 0,
 
     init: function() {
         this.display = new ROT.Display({width: 26, height: 26, fontSize: 24, spacing:1});
@@ -517,6 +537,34 @@ var Game = {
                                  y: origin.y + ymax - 3});
       }
       return result;
+    },
+
+    showGameSummary: function(attempt) {
+      var display = this.display.getOptions(),
+          player = attempt.player,
+          level = player.level,
+          bestSpellIndex = -1,
+          lines = [
+              (player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth,
+              'Spells cast: ' + attempt.spellsCast.length,
+              'Total value: ' +
+                  attempt.spellsCast.reduce(
+                      function(total, castSpell, i, spells) {
+                        var value = spellValue(castSpell.tiles);
+                        if (bestSpellIndex < 0 ||
+                            value > spellValue(spells[i].tiles))
+                          bestSpellIndex = i;
+                        return total + value;
+                      }, 0) ].concat(
+                  bestSpellIndex >= 0 ? [
+                      'Best spell: ' +
+                          checkWord(attempt.spellsCast[bestSpellIndex].tiles).toUpperCase() + ' (' +
+                          spellValue(attempt.spellsCast[bestSpellIndex].tiles) + ')' ] : []),
+          y = 0,
+          i;
+      this.display.clear();
+      for (i = 0; i < lines.length; i++)
+        y += this.display.drawText(0, y, lines[i], display.width) + 1;
     },
 
     _drawWholeMap: function(attempt) {
@@ -869,6 +917,15 @@ var checkWord = function(word) {
       word in words_am || word in words_nz ? word : false;
 }
 
+var spellValue = function(spell) {
+  var score = 0, i;
+  for (i = 0; i < spell.length; i++)
+    score += Game.values[spell[i]];
+  if (score.length >= 7)
+    score += 50;
+  return score;
+}
+
 Player.prototype.clickRackTile = function(index, map) {
   var result,
       button,
@@ -928,16 +985,13 @@ Player.prototype.clickRackTile = function(index, map) {
                   dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].glyph);
                   Game.attempt.message('You drop the ' + name + ' corpse.');
                 } else {
-                  var spell = '', score = 0;
-                  for (var j = 0; j < tiles.length; j++) {
+                  var spell = '';
+                  for (var j = 0; j < tiles.length; j++)
                     spell += tiles[j].glyph;
-                    score += Game.values[tiles[j].glyph];
-                  }
-                  if (spell.length == 7)
-                    score += 50;
                   var word = checkWord(spell);
                   if (word) {
-                    var previousExperience = player.experience;
+                    var previousExperience = player.experience,
+                        score = spellValue(spell);
                     player.experience += score;
                     Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth });
                     Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{green}(+' + score + ')');
@@ -1091,7 +1145,7 @@ Player.prototype.handleEvent = function(e) {
       this.click({x: coords[0], y: coords[1]},
                  getTileClickCoords(clientLoc, this, Game.display));
   }
-  if (Game.attempt.mode.length == 0)
+  if (Game.attempt.mode.length == 0 && Game.attempt.player.getHealth() > 0)
     Game._drawWholeMap(Game.attempt);
 }
     
@@ -1240,8 +1294,9 @@ Pedro.prototype.act = function() {
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
     var damage = this.attack(Game.attempt.player);
     if (Game.attempt.player.getHealth() == 0) {
-      Game.attempt.message('The ' + this.effectiveKind().name + ' kills you!');
-      Game.newAttempt();
+      Game.engine.lock();
+      Game.playerDiedAt = new Date().getTime();
+      Game.showGameSummary(Game.attempt);
     }
     else if (damage > 0)
       Game.attempt.message('The ' + this.effectiveKind().name + ' hits you! %c{red}(-' + damage + ')');
