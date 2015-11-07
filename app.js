@@ -575,7 +575,7 @@ var Game = {
                       function(total, castSpell, i, spells) {
                         var value = spellValue(castSpell.tiles);
                         if (bestSpellIndex < 0 ||
-                            value > spellValue(spells[i].tiles))
+                            value > spellValue(spells[bestSpellIndex].tiles))
                           bestSpellIndex = i;
                         return total + value;
                       }, 0) ].concat(
