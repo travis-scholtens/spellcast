@@ -127,7 +127,7 @@ colors = {
   'g': 'darkgreen',
   'h': 'orange',
   'i': 'blue',
-  'j': 'darkbrown',
+  'j': 'darkgoldenrod',
   'k': 'darkseagreen',
   'l': 'magenta',
   'm': 'darkorange',
