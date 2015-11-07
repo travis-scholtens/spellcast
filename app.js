@@ -943,7 +943,7 @@ var spellValue = function(spell) {
   var score = 0, i;
   for (i = 0; i < spell.length; i++)
     score += Game.values[spell[i]];
-  if (score.length >= 7)
+  if (spell.length >= 7)
     score += 50;
   return score;
 }
