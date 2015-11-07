@@ -34,17 +34,16 @@ var Attempt = function(state) {
   if (state)
     this.restore(state);
   else {
+    this.seed = ROT.RNG.getSeed();
     this.ascended = false;
     this.complete = false;
-    this.levels = [];
     this.player = null;
     this.rack = [];
     this.spellsCast = [];
   
-    for (var i = 0; i < 26; i++) {
-      this.levels.push(_generateMap(i+1));
-      localStorage['spellyLevelState' + i] = JSON.stringify(this.levelState(i));
-    }
+    this.levels = [_generateMap(1, this.seed)];
+    localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
+
     var colorBase = ROT.RNG.getUniformInt(80, 255);
     this.player = new Player(this.levels[0],
         this.levels[0].playerStart.x, this.levels[0].playerStart.y,
@@ -88,6 +87,7 @@ var fov = function(level) {
 }
 
 Attempt.prototype.restore = function(state) {
+  this.seed = state.s;
   this.ascended = state.a;
   this.complete = state.f;
   this.levels = [];
@@ -100,6 +100,7 @@ Attempt.prototype.restore = function(state) {
 
 Attempt.prototype.state = function() {
   return { player: this.player.state(), rack: this.rack,
+      s: this.seed,
       a: this.ascended,
       f: this.complete,
       c: this.spellsCast.map(function(s) {
@@ -150,13 +151,16 @@ Attempt.prototype.levelState = function(i) {
   return state;
 }
 
-var _generateMap = function(depth) {
+var _generateMap = function(depth, seed) {
   var level = { depth: depth },
       dim = level.depth == 1 ? 24 :
             level.depth == 2 ? 36 :
             level.depth == 3 ? 48 :
             level.depth == 4 ? 56 :
             64;
+  ROT.RNG.setSeed(seed);
+  for (var i = 0; i < depth; i++)
+    ROT.RNG.getUniform();
   level.width = dim;
   level.height = dim;
   level.radius = Math.sqrt(level.width * level.width + level.height * level.height);
@@ -219,7 +223,10 @@ var _generateMap = function(depth) {
 }
 
 Attempt.prototype.levelBelow = function(level) {
-  return this.levels[Math.min(this.levels.length - 1, this.levels.indexOf(level) + 1)];
+  var index = this.levels.indexOf(level) + 1;
+  if (index == this.levels.length)
+    this.levels.push(_generateMap(index+1, this.seed));
+  return this.levels[index];
 }
 
 Attempt.prototype.levelAbove = function(level) {
@@ -436,7 +443,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 1) {
+        if (state && state.v === 2) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
           this.engine.unlock();
@@ -446,7 +453,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 1,
+          gameState = { v: 2,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
