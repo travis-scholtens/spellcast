@@ -34,14 +34,14 @@ var Attempt = function(state) {
   if (state)
     this.restore(state);
   else {
-    this.seed = ROT.RNG.getSeed();
+    this.rngState = ROT.RNG.getState();
     this.ascended = false;
     this.complete = false;
     this.player = null;
     this.rack = [];
     this.spellsCast = [];
   
-    this.levels = [_generateMap(1, this.seed)];
+    this.levels = [_generateMap(1, this.rngState)];
     localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
 
     var colorBase = ROT.RNG.getUniformInt(80, 255);
@@ -87,7 +87,7 @@ var fov = function(level) {
 }
 
 Attempt.prototype.restore = function(state) {
-  this.seed = state.s;
+  this.rngState = state.s;
   this.ascended = state.a;
   this.complete = state.f;
   this.levels = [];
@@ -100,7 +100,7 @@ Attempt.prototype.restore = function(state) {
 
 Attempt.prototype.state = function() {
   return { player: this.player.state(), rack: this.rack,
-      s: this.seed,
+      s: this.rngState,
       a: this.ascended,
       f: this.complete,
       c: this.spellsCast.map(function(s) {
@@ -151,14 +151,14 @@ Attempt.prototype.levelState = function(i) {
   return state;
 }
 
-var _generateMap = function(depth, seed) {
+var _generateMap = function(depth, rngState) {
   var level = { depth: depth },
       dim = level.depth == 1 ? 24 :
             level.depth == 2 ? 36 :
             level.depth == 3 ? 48 :
             level.depth == 4 ? 56 :
             64;
-  ROT.RNG.setSeed(seed);
+  ROT.RNG.setState(rngState);
   for (var i = 0; i < depth; i++)
     ROT.RNG.getUniform();
   level.width = dim;
@@ -226,7 +226,7 @@ var _generateMap = function(depth, seed) {
 Attempt.prototype.levelBelow = function(level) {
   var index = this.levels.indexOf(level) + 1;
   if (index == this.levels.length)
-    this.levels.push(_generateMap(index+1, this.seed));
+    this.levels.push(_generateMap(index+1, this.rngState));
   return this.levels[index];
 }
 
@@ -446,7 +446,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 2) {
+        if (state && state.v === 3) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
           this.engine.unlock();
@@ -456,7 +456,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 2,
+          gameState = { v: 3,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
