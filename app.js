@@ -186,8 +186,9 @@ var _generateMap = function(depth, seed) {
   var rooms = digger.getRooms();
   var upRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
   var downRoom = upRoom;
-  while (downRoom == upRoom)
-    downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+  if (rooms.length > 1)
+    while (downRoom == upRoom)
+      downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
 
   var upCenter = rooms[upRoom].getCenter(),
       downCenter = rooms[downRoom].getCenter();
