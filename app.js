@@ -305,7 +305,9 @@ var selectWall = function(neighborWallDirections) {
 var exposed = function(level, x, y) {
   if (level.map[x + ',' + y].passable)
     return true;
-  var ncs = [[-1,-1], [-1,1], [1,-1], [1, 1]];
+  var ncs = [[-1,-1], [-1,0], [-1,1],
+             [0,-1], [0,1],
+             [1,-1], [1,0], [1,1]];
   for (var i = 0; i < ncs.length; i++) {
     var nx = x + ncs[i][0],
         ny = y + ncs[i][1];
