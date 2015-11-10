@@ -61,6 +61,9 @@ if (!String.fromCodePoint) {
   }());
 }
 
+var healthIcon = { glyph: '\u2665', color: 'lightpink' };
+var levelIcon = { glyph: '\u26a1', color: 'lightgreen' };
+
 var FoeKind = function(glyph, name, color, health, value, frequency) {
   this.glyph = glyph;
   this.name = name;
@@ -721,13 +724,13 @@ var Game = {
           meterHeight = display.height - 3 - messageCount - 2;
       drawMeter(this.display, 0, meterTop, meterHeight,
                 0, 50, 50 - attempt.player.woundedness,
-                '\u2665', 'lightpink');
+                healthIcon.glyph, healthIcon.color);
       var expLevelIndex = experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
       drawMeter(this.display, display.width - 1, meterTop, meterHeight,
                 experienceLevelDefinitions[expLevelIndex-1].expThreshold,
                 experienceLevelDefinitions[expLevelIndex].expThreshold,
                 attempt.player.experience,
-                '\u26a1', 'lightgreen');
+                levelIcon.glyph, levelIcon.color);
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
     },
 
@@ -942,7 +945,7 @@ var dealDamage = function(attempt, loc, foe) {
     attempt.message('You kill the ' + name + '!');
   }
   else if (damage > 0)
-    attempt.message('You hit the ' + name + '! %c{red}(-' + damage + ')');
+    attempt.message('You hit the ' + name + '! %c{red}-' + damage);
   else
     attempt.message('You miss the ' + name + '.');
 }
@@ -1096,7 +1099,7 @@ Player.prototype.clickRackTile = function(index, map) {
                         score = spellValue(spell);
                     player.experience += score;
                     Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth });
-                    Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{green}(+' + score + ')');
+                    Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
                       player.woundedness = 0;
@@ -1393,7 +1396,7 @@ Pedro.prototype.act = function() {
     var kind = this.chooseShiftedKind();
     if (this.shiftedKind !== kind) {
       Game.attempt.message('The shapeshifter changes form, from ' + this.shiftedKind.name +
-          ' to ' + kind.name + ', regenerating its health! %c{green}(+' + (kind.health - this.health) + ')');
+          ' to ' + kind.name + ', regenerating its health! %c{green}+' + (kind.health - this.health));
       this.shiftedKind = kind;
       this.health = this.shiftedKind.health;
     }
@@ -1409,7 +1412,7 @@ Pedro.prototype.act = function() {
       Game.showGameSummary(Game.attempt);
     }
     else if (damage > 0)
-      Game.attempt.message('The ' + this.effectiveKind().name + ' hits you! %c{red}(-' + damage + ')');
+      Game.attempt.message('The ' + this.effectiveKind().name + ' hits you! %c{' + healthIcon.color + '}-' + damage + healthIcon.glyph);
     else
       Game.attempt.message('The ' + this.effectiveKind().name + ' misses you.');
   } else {
