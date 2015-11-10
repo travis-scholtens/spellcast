@@ -17,6 +17,39 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	echo $(WORDS_NZ_NAME).js >> dist/index.appcache
 	echo '# $(shell date -u +%Y-%m-%d-%H-%M-%S)' >> dist/index.appcache
 
+icon_36.png: icon.svg
+	inkscape -z -e $@ -w 36 $<
+
+icon_48.png: icon.svg
+	inkscape -z -e $@ -w 48 $<
+
+icon_60.png: icon.svg
+	inkscape -z -e $@ -w 60 $<
+
+icon_72.png: icon.svg
+	inkscape -z -e $@ -w 72 $<
+
+icon_76.png: icon.svg
+	inkscape -z -e $@ -w 76 $<
+
+icon_96.png: icon.svg
+	inkscape -z -e $@ -w 96 $<
+
+icon_120.png: icon.svg
+	inkscape -z -e $@ -w 120 $<
+
+icon_128.png: icon.svg
+	inkscape -z -e $@ -w 128 $<
+
+icon_144.png: icon.svg
+	inkscape -z -e $@ -w 144 $<
+
+icon_152.png: icon.svg
+	inkscape -z -e $@ -w 152 $<
+
+icon_192.png: icon.svg
+	inkscape -z -e $@ -w 192 $<
+
 SpellyFreeMono.otf: freefont/FreeMono.sfd
 	FONTFORGE_LANGUAGE=pe fontforge -c 'Open($$1); Generate($$2)' $< $@
 
