@@ -490,6 +490,10 @@ var Game = {
         canvas.style.width = '100%';
         canvas.style.height = '100%';
         document.getElementById("main").appendChild(canvas);
+        if (canvas.clientHeight > canvas.height)
+          canvas.style.height = canvas.height + 'px';
+        if (canvas.clientWidth > canvas.clientHeight)
+          canvas.style.width = (0.625 * canvas.height) + 'px';
 
         window.addEventListener("keydown", handle);
         window.addEventListener("mouseup", handle);
