@@ -704,7 +704,7 @@ var Game = {
                     attempt.player.path.length = 0;
                   tile.contents.revealed = true;
                 } else if (tile.corpse != null) {
-                  glyph = tile.corpse == '.' ? '\u25a1' : tile.corpse;
+                  glyph = tile.corpse == '.' ? '\u25a0' : tile.corpse;
                   color = 'darkgray';
                 } else if (x == level.up.x && y == level.up.y)
                   glyph = '\u261d';
