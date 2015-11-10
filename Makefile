@@ -17,7 +17,7 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	echo $(WORDS_NZ_NAME).js >> dist/index.appcache
 	echo '# $(shell date -u +%Y-%m-%d-%H-%M-%S)' >> dist/index.appcache
 
-SpellyFreeMono.otf: FreeMono.sfd
+SpellyFreeMono.otf: freefont/FreeMono.sfd
 	FONTFORGE_LANGUAGE=pe fontforge -c 'Open($$1); Generate($$2)' $< $@
 
 experience.js: bingo.py
