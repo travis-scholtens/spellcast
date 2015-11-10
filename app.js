@@ -955,19 +955,15 @@ Player.prototype.keyPress = function(code, level) {
 
     var keyMap = {};
     keyMap[38] = 0;
-    keyMap[33] = 1;
-    keyMap[39] = 2;
-    keyMap[34] = 3;
-    keyMap[40] = 4;
-    keyMap[35] = 5;
-    keyMap[37] = 6;
-    keyMap[36] = 7;
+    keyMap[39] = 1;
+    keyMap[40] = 2;
+    keyMap[37] = 3;
 
     /* one of numpad directions? */
     if (!(code in keyMap)) { return; }
 
     /* is there a free space? */
-    var dir = ROT.DIRS[8][keyMap[code]];
+    var dir = ROT.DIRS[4][keyMap[code]];
     var newX = this._x + dir[0];
     var newY = this._y + dir[1];
     var newKey = newX + "," + newY;
