@@ -44,8 +44,8 @@ compiled_words_am.js: words_am.js
 compiled_words_nz.js: words_nz.js
 	closure-compiler --js words_nz.js --language_in ECMASCRIPT5 --js_output_file compiled_words_nz.js
 
-a.out.js: rot.js app.js experience.js foes.js
-	closure-compiler --js rot.js --js app.js --js experience.js --js foes.js --language_in ECMASCRIPT5 --js_output_file a.out.js
+a.out.js: rot.js/rot.js app.js experience.js foes.js
+	closure-compiler --js rot.js/rot.js --js app.js --js experience.js --js foes.js --language_in ECMASCRIPT5 --js_output_file a.out.js
 
 clean:
 	rm dist/*
