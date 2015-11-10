@@ -1,0 +1,16 @@
+Spelly is an adventure word game, where you crawl a procedurally-generated dungeon killing monsters, and using their corpses to cast "spells" (English words) to reach new experience levels.
+
+It's implemented as a (primarily) mobile web app, and should be playable offline when added to a mobile device's home screen.
+
+To build the app, obtain a word file and run "make" with the WORDS_FILE environment variable set to the path to an appropriate list of legal words (i.e., 2-7 letters, no proper nouns). Everything that ends up in dist/ is what needs to live on the web host.
+
+The game uses the rot.js engine, and includes glyphs from GNU FreeFont typefaces.
+
+Copyright © 2015 Travis Scholtens
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.  
+
+You should have received a copy of the GNU Affero General Public License
+along with this program (see file "COPYING").  If not, see <http://www.gnu.org/licenses/>.

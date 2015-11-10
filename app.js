@@ -646,7 +646,8 @@ var Game = {
           'Use their corpses to cast spells for more power',
           'Start with the spell "AA" (a kind of lava)',
           '7-corpse spells get a bonus',
-          'Cast the spell of "YENDOR" to win'
+          'Cast the spell of "YENDOR" to win',
+          'Source: bitbucket.org/tps12/spellcast'
       ].map(function(line) { return '\u2022 ' + line; }));
     },
 
