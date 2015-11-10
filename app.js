@@ -191,7 +191,7 @@ Attempt.prototype.restoreLevel = function(state) {
              });
   this.levels[i].fov = fov(this.levels[i]);
   this.levels[i].foes = [];
-  restoreObject(this.levels[i].foes, state.foeData, Pedro, this.levels[i]);
+  restoreObject(this.levels[i].foes, state.foeData, Foe, this.levels[i]);
   for (var j = 0; j < this.levels[i].foes.length; j++)
     this.levels[i].map[this.levels[i].foes[j]._x + ',' + this.levels[i].foes[j]._y].contents =
         this.levels[i].foes[j];
@@ -281,7 +281,7 @@ var _generateMap = function(depth, rngState) {
               [12, 18];
   for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
-    var foe = new Pedro(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
+    var foe = new Foe(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
     level.map[loc.x + ',' + loc.y].contents = foe;
     level.foes.push(foe);
   }
@@ -1256,7 +1256,7 @@ Player.prototype.handleEvent = function(e) {
     Game._drawWholeMap(Game.attempt);
 }
     
-var Pedro = function(kindOrState, level, x, y) {
+var Foe = function(kindOrState, level, x, y) {
   if (kindOrState.__proto__ !== FoeKind.prototype) {
     this.restore(kindOrState);
     this.level = level;
@@ -1276,7 +1276,7 @@ var Pedro = function(kindOrState, level, x, y) {
   }
 }
 
-Pedro.prototype.restore = function(state) {
+Foe.prototype.restore = function(state) {
   this._x = state.x;
   this._y = state.y;
   this.kind = Game.glyphKind[state.kindGlyph];
@@ -1287,7 +1287,7 @@ Pedro.prototype.restore = function(state) {
   this.health = state.health;
 }
 
-Pedro.prototype.state = function() {
+Foe.prototype.state = function() {
   var state = {
       x: this._x,
       y: this._y,
@@ -1300,13 +1300,13 @@ Pedro.prototype.state = function() {
   return state;
 }
 
-Pedro.prototype.getSpeed = function() { return 100; }
+Foe.prototype.getSpeed = function() { return 100; }
 
-Pedro.prototype.chooseShiftedKind = function() {
+Foe.prototype.chooseShiftedKind = function() {
   return Game.glyphKind[ROT.RNG.getWeightedValue(foeDistribution(foeKinds, this.level.depth))];
 }
 
-Pedro.prototype.effectiveKind = function() {
+Foe.prototype.effectiveKind = function() {
   return this.kind !== shapeshifter ? this.kind : this.shiftedKind;
 }
 
@@ -1361,7 +1361,7 @@ var locInView = function(level, fromLoc, targetLoc) {
   return canSeeTarget;
 }
 
-Pedro.prototype.attack = function(player) {
+Foe.prototype.attack = function(player) {
   var damage = Math.min(
       Math.max(0, Math.floor(ROT.RNG.getNormal(3, 1))),
       player.getHealth());
@@ -1370,7 +1370,7 @@ Pedro.prototype.attack = function(player) {
   return damage;
 }
 
-Pedro.prototype.act = function() {
+Foe.prototype.act = function() {
   var loc = { x: this._x, y: this._y },
       playerLoc = { x: Game.attempt.player._x, y: Game.attempt.player._y },
       inView = locInView(this.level, loc, playerLoc),
