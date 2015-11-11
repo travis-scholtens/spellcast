@@ -1089,9 +1089,12 @@ Player.prototype.clickRackTile = function(index, map) {
             for (var i = 0; i < actButton.length; i++)
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
                 if (tiles.length == 1) {
+                  var corpseUnderfoot = map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse;
                   var name = Game.glyphKind[tiles[0].glyph].name;
                   dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].glyph);
                   Game.attempt.message('You drop the ' + name + ' corpse.');
+                  if (corpseUnderfoot)
+                    takeCorpse(map, Game.attempt.player._x, Game.attempt.player._y, Game.attempt);
                 } else {
                   var spell = '';
                   for (var j = 0; j < tiles.length; j++)
