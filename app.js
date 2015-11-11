@@ -217,6 +217,43 @@ Attempt.prototype.levelState = function(i) {
   return state;
 }
 
+var ninetyDegreeAdjacentWalls = function(level, loc, dir) {
+  var adjDirs = dir == Direction.N || dir == Direction.S ?
+                [Direction.E, Direction.W] :
+                [Direction.N, Direction.S],
+      wallDirs = [];
+  adjDirs.forEach(function(adjDir) {
+    var dx = adjDir == Direction.E ? 1 :
+             adjDir == Direction.W ? -1 : 0,
+        dy = adjDir == Direction.S ? 1 :
+             adjDir == Direction.N ? -1 : 0;
+    if (isWall(level, loc.x + dx, loc.y + dy))
+      wallDirs.push(adjDir);
+  });
+  return wallDirs;
+}
+
+var adjacentWalls = function(level, loc) {
+  var walls = [];
+  [[Direction.E, loc.x+1, loc.y],
+   [Direction.W, loc.x-1, loc.y],
+   [Direction.N, loc.x, loc.y-1],
+   [Direction.S, loc.x, loc.y+1]].forEach(function(dir) {
+    if (isWall(level, dir[1], dir[2]))
+      walls.push({dir: dir[0], loc: {x: dir[1], y: dir[2]}});
+   });
+  return walls;
+}
+
+var floorSpaces = function(level) {
+  var x, y, floor = [];
+  for (x = 0; x < level.width; x++)
+    for (y = 0; y < level.height; y++)
+      if (level.map[x + ',' + y].passable)
+        floor.push({x: x, y: y});
+  return floor;
+}
+
 var _generateMap = function(depth, rngState) {
   var level = { depth: depth },
       dim = level.depth == 1 ? 24 :
@@ -242,10 +279,39 @@ var _generateMap = function(depth, rngState) {
   }
   digger.create(digCallback.bind(level));
 
+  var edges = [],
+      addEdge = function(loc, dir) {
+        if (!(loc.x in edges))
+          edges[loc.x] = [];
+        if (!(loc.y in edges[loc.x]))
+          edges[loc.x][loc.y] = [];
+        if (edges[loc.x][loc.y].indexOf(dir) < 0)
+          edges[loc.x][loc.y].push(dir);
+      },
+      addEdges = function(loc, dir) {
+        addEdge(loc, dir);
+        if (dir == Direction.E)
+          addEdge({x: loc.x + 1, y: loc.y}, Direction.W);
+        else if (dir == Direction.W)
+          addEdge({x: loc.x - 1, y: loc.y}, Direction.E);
+        else if (dir == Direction.N)
+          addEdge({x: loc.x, y: loc.y - 1}, Direction.S);
+        else if (dir == Direction.S)
+          addEdge({x: loc.x, y: loc.y + 1}, Direction.N);
+      };
+
+  floorSpaces(level).forEach(function(loc) {
+    adjacentWalls(level, loc).forEach(function(wall) {
+      ninetyDegreeAdjacentWalls(level, wall.loc, wall.dir).forEach(function(adjDir) {
+        addEdges(wall.loc, adjDir);
+      });
+    });
+  });
+
   for (var x = 0; x < level.width; x++)
     for (var y = 0; y < level.height; y++)
-      if (isWall(level, x, y))
-        level.map[x+','+y].glyph = selectWall(neighborWalls(level, x, y));
+      if (x in edges && y in edges[x])
+        level.map[x+','+y].glyph = selectWall(wallValue(edges[x][y]));
 
   level.fov = fov(level);
 
@@ -391,13 +457,15 @@ var isWall = function(level, x, y) {
   return exposed(level, x, y) && !level.map[x + ',' + y].passable;
 }
 
-var neighborWalls = function(level, x, y) {
-  var directions = 0;
-  if (isWall(level, x, y-1)) directions |= Direction.N;
-  if (isWall(level, x+1, y)) directions |= Direction.E;
-  if (isWall(level, x, y+1)) directions |= Direction.S;
-  if (isWall(level, x-1, y)) directions |= Direction.W;
-  return directions;
+var wallValue = function(dirs) {
+  return dirs.reduce(function(x, y) { return x | y; }, 0);
+}
+
+var partOfFlatWall = function(level, x, y, dir) {
+  var cy = dir == Direction.W || dir == Direction.E,
+      cx = dir == Direction.N || dir == Direction.S;
+  return (cx && (!isWall(level, x-1, y) || !isWall(level, x+1, y))) ||
+         (cy && (!isWall(level, x, y-1) || !isWall(level, x, y+1)));
 }
 
 var meterCellEighths = function(rangeLow, rangeHigh, value, scale) {
