@@ -878,12 +878,14 @@ Player.prototype.attack = function(foe) {
 
 takeCorpse = function(map, x, y, attempt) {
   var tile = map[x + ',' + y];
-  if (tile.corpse != null && attempt.rack.length < Game.rack_size) {
-     var name = Game.glyphKind[tile.corpse].name;
-     attempt.rack.push(tile.corpse);
-     tile.corpse = null;
-     Game.attempt.message('You take the ' + name + ' corpse.');
-     return true;
+  if (tile.corpse != null) {
+    if (attempt.rack.length < Game.rack_size) {
+      var name = Game.glyphKind[tile.corpse].name;
+      attempt.rack.push(tile.corpse);
+      tile.corpse = null;
+      Game.attempt.message('You take the ' + name + ' corpse.');
+    }
+    return true;
   }
   return false;
 }
