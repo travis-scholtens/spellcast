@@ -158,14 +158,15 @@ Attempt.prototype.restore = function(state) {
   this.complete = state.f;
   this.levels = [];
   this.player = new Player(state.player);
-  this.rack = state.rack;
+  this.rack = state.rack.map(function(c) { return new Corpse(c.g, c.t); });
   this.spellsCast = state.c.map(function(s) {
     return { tiles: s[0], depth: s[1] };
   });
 }
 
 Attempt.prototype.state = function() {
-  return { player: this.player.state(), rack: this.rack,
+  return { player: this.player.state(),
+      rack: this.rack.map(function(c) { return { g: c.glyph, t: Game.scheduler.getTime() - c.timeOfDeath }; }),
       s: this.rngState,
       a: this.ascended,
       f: this.complete,
@@ -183,10 +184,11 @@ Attempt.prototype.restoreLevel = function(state) {
              function(t) {
                var tile = new Tile(t.c in Game.glyphKind || t.c == '\u00b7' ? '\u00b7' : false);
                if (t.c in Game.glyphKind)
-                 tile.corpse = t.c;
+                 tile.corpse = new Corpse(t.c, t.f);
                else
                  tile.glyph = t.c;
-               tile.revealed = t.r;
+               if ('r' in t)
+                 tile.revealed = true;
                return tile;
              });
   this.levels[i].fov = fov(this.levels[i]);
@@ -208,9 +210,15 @@ Attempt.prototype.levelState = function(i) {
       tileData: objectState(this.levels[i].map,
                             function(t) { return t.glyph !== null; },
                             function(t) {
-                              return {
-                                c: t.corpse !== null ? t.corpse : t.glyph,
-                                r: t.revealed };
+                              var ts = {};
+                              if (t.corpse !== null) {
+                                ts.c = t.corpse.glyph;
+                                ts.f = Game.scheduler.getTime() - t.corpse.timeOfDeath;
+                              } else
+                                ts.c = t.glyph;
+                              if (t.revealed)
+                                ts.r = 1;
+                              return ts;
                             }),
       foeData: listState(this.levels[i].foes)
       };
@@ -582,7 +590,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 3) {
+        if (state && state.v === 6) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
           this.engine.unlock();
@@ -592,7 +600,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 3,
+          gameState = { v: 6,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
@@ -778,8 +786,12 @@ var Game = {
                     attempt.player.path.length = 0;
                   tile.contents.revealed = true;
                 } else if (tile.corpse != null) {
-                  glyph = tile.corpse == '.' ? '\u25a0' : tile.corpse;
-                  color = 'darkgray';
+                  if (tile.corpse.rotted())
+                    tile.corpse = null;
+                  else {
+                    glyph = tile.corpse.glyph == '.' ? '\u25a0' : tile.corpse.glyph;
+                    color = tile.corpse.rotting() ? 'darkgreen' : 'darkgray';
+                  }
                 } else if (x == level.up.x && y == level.up.y)
                   glyph = '\u261d';
                 else if (x == level.down.x && y == level.down.y)
@@ -819,7 +831,7 @@ var Game = {
         clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
       for (var i = 0; i < this.attempt.rack.length; i++) {
         drawRackTile(
-            this.display, 2 + 3 * i, display.height - 2, this.attempt.rack[i], 'tan');
+            this.display, 2 + 3 * i, display.height - 2, this.attempt.rack[i].glyph, 'tan');
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[2 + 3 * i + j] = i;
       }
@@ -835,11 +847,24 @@ var Game = {
       clearRackSpace(this.display, 23, display.height - 2);
       if (corpse != null) {
         drawRackTile(
-            this.display, 23, display.height - 2, corpse, 'gray');
+            this.display, 23, display.height - 2, corpse.glyph, 'gray');
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[23 + j] = 6;
       }
     }
+};
+
+var Corpse = function(glyph, timeSinceDeath) {
+  this.glyph = glyph;
+  this.timeOfDeath = Game.scheduler.getTime() - timeSinceDeath;
+};
+
+Corpse.prototype.rotting = function() {
+  return (Game.scheduler.getTime() - this.timeOfDeath) > 0.9;
+};
+
+Corpse.prototype.rotted = function() {
+  return (Game.scheduler.getTime() - this.timeOfDeath) > 1;
 };
 
 var Tile = function(glyph) {
@@ -946,7 +971,7 @@ takeCorpse = function(map, x, y, attempt) {
   var tile = map[x + ',' + y];
   if (tile.corpse != null) {
     if (attempt.rack.length < Game.rack_size) {
-      var name = Game.glyphKind[tile.corpse].name;
+      var name = Game.glyphKind[tile.corpse.glyph].name;
       attempt.rack.push(tile.corpse);
       tile.corpse = null;
       Game.attempt.message('You take the ' + name + ' corpse.');
@@ -1012,7 +1037,7 @@ var dealDamage = function(attempt, loc, foe) {
       name = Game.glyphKind[foe.effectiveKind().glyph].name;
   if (foe.health == 0) {
     map[loc.x + ',' + loc.y].contents = null;
-    dropCorpse(map, loc.x, loc.y, foe.kind.glyph);
+    dropCorpse(map, loc.x, loc.y, new Corpse(foe.kind.glyph, 0));
     Game.scheduler.remove(foe);
     foes.splice(foes.indexOf(foe), 1);
     attempt.message('You kill the ' + name + '!');
@@ -1107,13 +1132,13 @@ Player.prototype.clickRackTile = function(index, map) {
       height;
   if (index < Game.attempt.rack.length) {
     var remaining = Game.attempt.rack.splice(index);
-    this.modalTiles.push({glyph: remaining.shift(), fromRack: true, color: 'tan'});
+    this.modalTiles.push({corpse: remaining.shift(), fromRack: true, color: 'tan'});
     Game.attempt.rack = Game.attempt.rack.concat(remaining);
   } else if (index == 6) {
     var key = Game.attempt.player._x + ',' + Game.attempt.player._y
-    var glyph = map[key].corpse;
-    if (glyph != null) {
-      this.modalTiles.push({glyph: glyph, fromRack: false, color: 'gray'});
+    var corpse = map[key].corpse;
+    if (corpse != null) {
+      this.modalTiles.push({corpse: corpse, fromRack: false, color: 'gray'});
       map[key].corpse = null;
     }
   }
@@ -1130,7 +1155,7 @@ Player.prototype.clickRackTile = function(index, map) {
           Game.display,
           result.center.x - width/2 + 3 * i + 4 + padding,
           result.center.y - height/4,
-          this.modalTiles[i].glyph, this.modalTiles[i].color);
+          this.modalTiles[i].corpse.glyph, this.modalTiles[i].color);
     }
     Game.drawRackTiles(
         Game.attempt.player.level.map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse);
@@ -1143,9 +1168,9 @@ Player.prototype.clickRackTile = function(index, map) {
             if (loc.x == closeButton[i].x && loc.y == closeButton[i].y) {
               for (var j = 0; j < tiles.length; j++) {
                 if (tiles[j].fromRack)
-                  Game.attempt.rack.push(tiles[j].glyph);
+                  Game.attempt.rack.push(tiles[j].corpse);
                 else
-                  map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse = tiles[j].glyph;
+                  map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse = tiles[j].corpse;
               }
               tiles.length = 0;
               clicked = true;
@@ -1156,13 +1181,17 @@ Player.prototype.clickRackTile = function(index, map) {
               if (loc.x == actButton[i].x && loc.y == actButton[i].y) {
                 var corpseUnderfoot = map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse;
                 if (tiles.length == 1) {
-                  var name = Game.glyphKind[tiles[0].glyph].name;
-                  dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].glyph);
-                  Game.attempt.message('You drop the ' + name + ' corpse.');
+                  var name = Game.glyphKind[tiles[0].corpse.glyph].name;
+                  if (tiles[0].corpse.rotted())
+                    Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing');
+                  else {
+                    dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].corpse);
+                    Game.attempt.message('You drop the ' + name + ' corpse.');
+                  }
                 } else {
                   var spell = '';
                   for (var j = 0; j < tiles.length; j++)
-                    spell += tiles[j].glyph;
+                    spell += tiles[j].corpse.glyph;
                   var word = checkWord(spell);
                   if (word) {
                     var previousExperience = player.experience,
