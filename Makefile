@@ -10,7 +10,7 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	cp icon_*.png dist/
 	cp font.css dist/
 	cp SpellyFreeMono.otf dist/
-	cat index.html | sed -e 's/{APP}/$(SCRIPT_NAME)/' | sed -e 's/{WORDS_AM}/$(WORDS_AM_NAME)/' | sed -e 's/{WORDS_NZ}/$(WORDS_NZ_NAME)/' > dist/index.html
+	cat index.html | sed -e 's/{APP}/$(SCRIPT_NAME)/' | sed -e 's/{WORDS_AM}/$(WORDS_AM_NAME)/' | sed -e 's/{WORDS_NZ}/$(WORDS_NZ_NAME)/' | sed -e 's/{GA_TRACKING_ID}/$(GA_TRACKING_ID)/' > dist/index.html
 	cat manifest.tmpl > dist/index.appcache
 	echo $(SCRIPT_NAME).js >> dist/index.appcache
 	echo $(WORDS_AM_NAME).js >> dist/index.appcache
