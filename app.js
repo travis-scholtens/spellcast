@@ -329,9 +329,7 @@ var _generateMap = function(depth, rngState) {
              { x: -1, y: -1 };
   if (depth == 1)
     level.playerStart = { x: upCenter[0], y: upCenter[1] };
-  level.down = depth < 26 ?
-               { x: downCenter[0], y: downCenter[1] } :
-               { x: -1, y: -1 };
+  level.down = { x: downCenter[0], y: downCenter[1] };
 
   var kinds = foeDistribution(foeKinds, level.depth);
   if (level.depth > 1) {
