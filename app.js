@@ -676,9 +676,13 @@ var Game = {
                             origin.y + y,
                             glyph);
         }
-      result.closeButton = [{
-          x: origin.x + 1,
-          y: origin.y + 1 }];
+      result.closeButton = Math.round(origin.x) == origin.x ?
+          [{ x: origin.x + 1,
+             y: origin.y + 1 }] :
+          [{ x: origin.x + 0.5,
+             y: origin.y + 1 },
+           { x: origin.x + 1.5,
+             y: origin.y + 1 }];
       if (button !== undefined) {
         for (x = 0; x < button.length + 2; x++)
           for (y = 0; y < 3; y++) {
