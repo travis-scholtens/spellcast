@@ -122,9 +122,9 @@ colors = {
   'b': 'brown',
   'c': 'yellow',
   'd': 'crimson',
-  'e': 'green',
-  'f': 'darkblue',
-  'g': 'darkgreen',
+  'e': 'lawngreen',
+  'f': 'cadetblue',
+  'g': 'olive',
   'h': 'orange',
   'i': 'blue',
   'j': 'darkgoldenrod',
@@ -143,7 +143,7 @@ colors = {
   'w': 'springgreen',
   'x': 'lemonchiffon',
   'y': 'peru',
-  'z': 'gray'
+  'z': 'darkgray'
 }
 
 abcs = 'abcdefghijklmnopqrstuvwxyz'
