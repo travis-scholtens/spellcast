@@ -28,6 +28,13 @@
         <script type="text/javascript">
           var fontDivWidth;
 
+          window.addEventListener('load', function() {
+            window.applicationCache.addEventListener('updateready', function() {
+              if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
+                window.location.reload();
+            }, false);
+          }, false);
+
           document.addEventListener('DOMContentLoaded', function() {
             var fontDiv = document.getElementById('font');
             fontDivWidth = fontDiv.offsetWidth;
