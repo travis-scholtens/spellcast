@@ -64,6 +64,29 @@ if (!String.fromCodePoint) {
 var healthIcon = { glyph: '\u2665', color: 'lightpink' };
 var levelIcon = { glyph: '\u26a1', color: 'lightgreen' };
 
+var Shrine = function(multiplier, isWholeWord, frequency, color, name) {
+  this.multiplier = multiplier;
+  this.isWholeWord = isWholeWord;
+  this.frequency = frequency;
+  this.color = color;
+  this.name = name;
+};
+
+var shrines = [
+    new Shrine(2, false, 24, 'lightblue', 'Biglyphica'),
+    new Shrine(3, false, 12, 'blue', 'Trirunius'),
+    new Shrine(2, true, 16, 'pink', 'Duverbia'),
+    new Shrine(3, true, 8, 'red', 'Troilogos'),
+];
+
+var shrineDistribution = function(ss) {
+  var map = {};
+  ss.forEach(function(s, i) {
+    map[i] = s.frequency;
+  });
+  return map;
+}(shrines);
+
 var FoeKind = function(glyph, name, color, health, value, frequency) {
   this.glyph = glyph;
   this.name = name;
@@ -207,6 +230,7 @@ Attempt.prototype.levelState = function(i) {
       radius: this.levels[i].radius,
       up: this.levels[i].up,
       down: this.levels[i].down,
+      shrine: this.levels[i].shrine,
       tileData: objectState(this.levels[i].map,
                             function(t) { return t.glyph !== null; },
                             function(t) {
@@ -329,6 +353,16 @@ var _generateMap = function(depth, rngState) {
   if (rooms.length > 1)
     while (downRoom == upRoom)
       downRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+  var shrineRoom = upRoom;
+  if (level.depth == 1)
+    do {
+      shrineRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+    } while (rooms.length > 2 && (shrineRoom == upRoom || shrineRoom == downRoom));
+  else {
+    shrineRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
+    if (shrineRoom == upRoom || shrineRoom == downRoom)
+      shrineRoom = null;
+  }
 
   var upCenter = rooms[upRoom].getCenter(),
       downCenter = rooms[downRoom].getCenter();
@@ -338,6 +372,14 @@ var _generateMap = function(depth, rngState) {
   if (depth == 1)
     level.playerStart = { x: upCenter[0], y: upCenter[1] };
   level.down = { x: downCenter[0], y: downCenter[1] };
+
+  var shrineCenter = shrineRoom !== null ? rooms[shrineRoom].getCenter() : null;
+  level.shrine = shrineRoom !== null ?
+                 { x: shrineCenter[0] + 1,
+                   y: shrineCenter[1],
+                   type: level.depth == 1 ? 2 :
+                         ROT.RNG.getWeightedValue(shrineDistribution) } :
+                 null;
 
   var kinds = foeDistribution(foeKinds, level.depth);
   if (level.depth > 1) {
@@ -390,7 +432,7 @@ var rackTileText = function(glyph, color) {
   return '%b{' + color + '}%c{black}' + glyph;
 }
 
-var drawRackTile = function(display, x, y, glyph, color) {
+var drawRackTile = function(display, x, y, glyph, color, shrine) {
   var value = Game.values[glyph],
       ax,
       digits;
@@ -405,12 +447,20 @@ var drawRackTile = function(display, x, y, glyph, color) {
     display.draw(ax, y, '', 'black', color);
   else
     display.drawText(ax, y, rackTileText(glyph, color));
+  if (shrine)
+    display.draw(ax, y+1, '\u2501', shrine.color);
   if (digits.length > 0)
-    for (var i = 0; i < digits.length; i++)
+    for (var i = 0; i < digits.length; i++) {
       display.drawText(ax + 0.75 * i, y,
           rackTileText(String.fromCodePoint(0x2080 + digits[i]), color));
-  else
+      if (shrine)
+        display.draw(ax + 1 + 0.75 * i, y+1, '\u2501', shrine.color);
+    }
+  else {
     display.draw(ax + 1, y, '', 'black', color);
+    if (shrine)
+      display.draw(ax + 1, y+1, '\u2501', shrine.color);
+  }
 }
 
 Attempt.prototype.message = function(text) {
@@ -549,6 +599,29 @@ var handle = function(e) {
   e.preventDefault();
 }
 
+var surroundText = function(text, color) {
+  return '%c{' + color + '}' + text + '%c{}';
+}
+
+var formatCastSpell = function(text, shrineType) {
+  var shrine = shrineType !== null ? shrines[shrineType] : null,
+      bestLetterValue =
+          text.split('').map(function(c) { return c in Game.values ? Game.values[c] : 0; }).reduce(function(a,b) { return Math.max(a,b); }),
+      bestLetterIndex = bestLetterValue > 0 ?
+          text.split('').findIndex(function(c) { return c in Game.values && Game.values[c] == bestLetterValue; }) :
+          1  /* the blank after the opening '(' in the case of a word consisting entirely of blanks */,
+      upperCasedText = text.toUpperCase();
+
+  if(shrine == null) return upperCasedText;
+
+  if (shrine.isWholeWord)
+    return surroundText(upperCasedText, shrine.color);
+  else
+    return upperCasedText.substr(0, bestLetterIndex) +
+        surroundText(upperCasedText[bestLetterIndex], shrine.color) +
+        upperCasedText.substr(bestLetterIndex+1);
+}
+
 var Game = {
     display: null,
     engine: null,
@@ -590,7 +663,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 6) {
+        if (state && state.v === 7) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
           this.engine.unlock();
@@ -600,7 +673,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 6,
+          gameState = { v: 7,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
@@ -739,16 +812,16 @@ var Game = {
               'Total value: ' +
                   attempt.spellsCast.reduce(
                       function(total, castSpell, i, spells) {
-                        var value = spellValue(castSpell.tiles);
+                        var value = spellValue(castSpell.tiles, castSpell.shrine);
                         if (bestSpellIndex < 0 ||
-                            value > spellValue(spells[bestSpellIndex].tiles))
+                            value > spellValue(spells[bestSpellIndex].tiles, spells[bestSpellIndex].shrine))
                           bestSpellIndex = i;
                         return total + value;
                       }, 0) ].concat(
                   bestSpellIndex >= 0 ? [
                       'Best spell: ' +
-                          checkWord(attempt.spellsCast[bestSpellIndex].tiles).toUpperCase() + ' (' +
-                          spellValue(attempt.spellsCast[bestSpellIndex].tiles) + ')' ] : []);
+                          formatCastSpell(checkWord(attempt.spellsCast[bestSpellIndex].tiles), attempt.spellsCast[bestSpellIndex].shrine) + ' (' +
+                          spellValue(attempt.spellsCast[bestSpellIndex].tiles, attempt.spellsCast[bestSpellIndex].shrine) + ')' ] : []);
       this.showTextScreen(lines);
     },
 
@@ -774,7 +847,8 @@ var Game = {
           var x = attempt.player.getX() - display.width/2 + dx,
               y = attempt.player.getY() - display.height/2 + dy,
               glyph = '',
-              color = 'black';
+              color = 'black',
+              bg = 'black';
           if ((0 <= x && x < level.width) &&
               (0 <= y && y < level.height)) {
             if (x == attempt.player._x && y == attempt.player._y)
@@ -802,10 +876,12 @@ var Game = {
                   glyph = '\u261f';
                 else
                   glyph = tile.glyph;
+                if (level.shrine && x == level.shrine.x && y == level.shrine.y)
+                  bg = shrines[level.shrine.type].color;
               }
             }
           }
-          this.display.draw(dx, dy, glyph, color);
+          this.display.draw(dx, dy, glyph, color, bg);
         }
       var meterTop = messageCount + 1,
           meterHeight = display.height - 3 - messageCount - 2;
@@ -835,7 +911,7 @@ var Game = {
         clearRackSpace(this.display, 2 + 3 * i, display.height - 2);
       for (var i = 0; i < this.attempt.rack.length; i++) {
         drawRackTile(
-            this.display, 2 + 3 * i, display.height - 2, this.attempt.rack[i].glyph, 'tan');
+            this.display, 2 + 3 * i, display.height - 2, this.attempt.rack[i].glyph, 'tan', null);
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[2 + 3 * i + j] = i;
       }
@@ -851,7 +927,7 @@ var Game = {
       clearRackSpace(this.display, 23, display.height - 2);
       if (corpse != null) {
         drawRackTile(
-            this.display, 23, display.height - 2, corpse.glyph, 'gray');
+            this.display, 23, display.height - 2, corpse.glyph, 'gray', null);
         for (var j = 0; j < 2; j++)
           this.rackTileLocations[23 + j] = 6;
       }
@@ -930,13 +1006,16 @@ var walkPath = function(attempt) {
       loc = path.length > 0 ? path.shift() : null,
       level = player.level,
       map = level.map,
-      tile = loc != null ? map[loc[0] + ',' + loc[1]] : { passable: false };
+      tile = loc != null ? map[loc[0] + ',' + loc[1]] : { passable: false },
+      shrine = null;
   if (tile.passable && tile.revealed && tile.contents === null) {
     player._x = loc[0];
     player._y = loc[1];
     if (takeCorpse(map, player._x, player._y, attempt))
       path.length = 0;
     if (useStairs(attempt))
+      path.length = 0;
+    if (level.shrine && player._x == level.shrine.x && player._y == level.shrine.y)
       path.length = 0;
     revealFrom(player.level, {x: player._x, y: player._y});
     Game._drawWholeMap(attempt);
@@ -1012,6 +1091,7 @@ var useStairs = function(attempt) {
       level = player.level,
       stairLoc;
   if (player._x == level.down.x && player._y == level.down.y) {
+    player.level.shrine = null;
     Game.save();
     player.level = attempt.levelBelow(level);
     stairLoc = attempt.player.level.up;
@@ -1120,10 +1200,16 @@ var checkWord = function(word) {
       word == 'yendor' || word in words_am || word in words_nz ? word : false;
 }
 
-var spellValue = function(spell) {
-  var score = 0, i;
+var spellValue = function(spell, shrineType) {
+  var score = 0,
+      shrine = shrineType !== null ? shrines[shrineType] : null,
+      bestLetterValue =
+          spell.split('').map(function(c) { return Game.values[c]; }).reduce(function(a,b) { return Math.max(a,b); }),
+      bestLetterIndex = spell.split('').findIndex(function(c) { return Game.values[c] == bestLetterValue; }),
+      i;
   for (i = 0; i < spell.length; i++)
-    score += Game.values[spell[i]];
+    score += Game.values[spell[i]] *
+             (shrine && (shrine.isWholeWord || i == bestLetterIndex) ? shrine.multiplier : 1);
   if (spell.length >= 7)
     score += 50;
   return score;
@@ -1153,13 +1239,21 @@ Player.prototype.clickRackTile = function(index, map) {
     width = button !== undefined ? Math.min(26, Math.max(12, 6 + 3 * this.modalTiles.length)) : 8;
     height = button !== undefined ? 8 : 4;
     result = Game.modal({x: width, y: height}, button);
+    var shrine = Game.attempt.player.level.shrine &&
+        Game.attempt.player._x == Game.attempt.player.level.shrine.x &&
+        Game.attempt.player._y == Game.attempt.player.level.shrine.y ?
+            shrines[Game.attempt.player.level.shrine.type] : null;
+    var bestLetterValue =
+        this.modalTiles.map(function(c) { return Game.values[c.corpse.glyph]; }).reduce(function(a,b) { return Math.max(a,b); });
+    var bestLetterIndex = this.modalTiles.findIndex(function(c) { return Game.values[c.corpse.glyph] == bestLetterValue; });
     for (var i = 0; i < this.modalTiles.length; i++) {
       var padding = this.modalTiles.length == 1 ? 1 : 0;
       drawRackTile(
           Game.display,
           result.center.x - width/2 + 3 * i + 4 + padding,
           result.center.y - height/4,
-          this.modalTiles[i].corpse.glyph, this.modalTiles[i].color);
+          this.modalTiles[i].corpse.glyph, this.modalTiles[i].color,
+          shrine && (shrine.isWholeWord || i == bestLetterIndex) ? shrine : null);
     }
     Game.drawRackTiles(
         Game.attempt.player.level.map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse);
@@ -1196,13 +1290,19 @@ Player.prototype.clickRackTile = function(index, map) {
                   var spell = '';
                   for (var j = 0; j < tiles.length; j++)
                     spell += tiles[j].corpse.glyph;
-                  var word = checkWord(spell);
+                  var word = checkWord(spell),
+                      shrine = Game.attempt.player.level.shrine &&
+                          Game.attempt.player._x == Game.attempt.player.level.shrine.x &&
+                          Game.attempt.player._y == Game.attempt.player.level.shrine.y ?
+                              Game.attempt.player.level.shrine.type : null;
+                  if (shrine)
+                    Game.attempt.player.level.shrine = null;
                   if (word) {
                     var previousExperience = player.experience,
-                        score = spellValue(spell);
+                        score = spellValue(spell, shrine);
                     player.experience += score;
-                    Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth });
-                    Game.attempt.message('You cast ' + word.toUpperCase() + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
+                    Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine });
+                    Game.attempt.message('You cast ' + formatCastSpell(word, shrine) + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
                       player.woundedness = 0;
