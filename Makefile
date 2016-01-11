@@ -1,7 +1,7 @@
 all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json icon_36.png icon_48.png icon_60.png icon_72.png icon_76.png icon_96.png icon_96.png icon_120.png icon_128.png icon_144.png icon_152.png icon_192.png font.css SpellyFreeMono.otf
-	$(eval SCRIPT_NAME=$(shell cat index.html a.out.js | md5sum | cut -d ' ' -f1))
-	$(eval WORDS_AM_NAME=$(shell cat compiled_words_am.js | md5sum | cut -d ' ' -f1))
-	$(eval WORDS_NZ_NAME=$(shell cat compiled_words_nz.js | md5sum | cut -d ' ' -f1))
+	$(eval SCRIPT_NAME=$(shell cat index.html a.out.js | $(MD5) | cut -d ' ' -f1))
+	$(eval WORDS_AM_NAME=$(shell cat compiled_words_am.js | $(MD5) | cut -d ' ' -f1))
+	$(eval WORDS_NZ_NAME=$(shell cat compiled_words_nz.js | $(MD5) | cut -d ' ' -f1))
 	mkdir -p dist
 	cp a.out.js dist/$(SCRIPT_NAME).js
 	cp compiled_words_am.js dist/$(WORDS_AM_NAME).js
