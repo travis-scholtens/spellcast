@@ -1,4 +1,6 @@
-all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json icon_36.png icon_48.png icon_60.png icon_72.png icon_76.png icon_96.png icon_96.png icon_120.png icon_128.png icon_144.png icon_152.png icon_192.png font.css SpellyFreeMono.otf
+FONT_EXT=ttf
+
+all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json icon_36.png icon_48.png icon_60.png icon_72.png icon_76.png icon_96.png icon_96.png icon_120.png icon_128.png icon_144.png icon_152.png icon_192.png font.css SpellyFreeMono.$(FONT_EXT)
 	$(eval SCRIPT_NAME=$(shell cat index.html a.out.js | $(MD5) | cut -d ' ' -f1))
 	$(eval WORDS_AM_NAME=$(shell cat compiled_words_am.js | $(MD5) | cut -d ' ' -f1))
 	$(eval WORDS_NZ_NAME=$(shell cat compiled_words_nz.js | $(MD5) | cut -d ' ' -f1))
@@ -9,9 +11,10 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	cp manifest.json dist/
 	cp icon_*.png dist/
 	cp font.css dist/
-	cp SpellyFreeMono.otf dist/
+	cp SpellyFreeMono.$(FONT_EXT) dist/
 	cat index.html | sed -e 's/{APP}/$(SCRIPT_NAME)/' | sed -e 's/{WORDS_AM}/$(WORDS_AM_NAME)/' | sed -e 's/{WORDS_NZ}/$(WORDS_NZ_NAME)/' | sed -e 's/{GA_TRACKING_ID}/$(GA_TRACKING_ID)/' > dist/index.html
 	cat manifest.tmpl > dist/index.appcache
+	echo SpellyFreeMono.$(FONT_EXT) >> dist/index.appcache
 	echo $(SCRIPT_NAME).js >> dist/index.appcache
 	echo $(WORDS_AM_NAME).js >> dist/index.appcache
 	echo $(WORDS_NZ_NAME).js >> dist/index.appcache
@@ -50,7 +53,7 @@ icon_152.png: icon.svg
 icon_192.png: icon.svg
 	inkscape -z -e $@ -w 192 $<
 
-SpellyFreeMono.otf: freefont/FreeMono.sfd
+SpellyFreeMono.$(FONT_EXT): freefont/FreeMono.sfd
 	FONTFORGE_LANGUAGE=pe fontforge -c 'Open($$1); Generate($$2)' $< $@
 
 experience.js: bingo.py
