@@ -1018,7 +1018,6 @@ var walkPath = function(attempt) {
     if (level.shrine && player._x == level.shrine.x && player._y == level.shrine.y)
       path.length = 0;
     revealFrom(player.level, {x: player._x, y: player._y});
-    Game._drawWholeMap(attempt);
     return true;
   }
   return false;
@@ -1028,17 +1027,18 @@ Player.prototype.act = function() {
   if (Game.attempt.complete) {
     Game.engine.lock();
     Game.showGameSummary(Game.attempt);
-  } else if (this.path.length > 0 && walkPath(Game.attempt)) {
-    var done = null,
-        promise = { then: function(cb) { done = cb; } };
-    setTimeout( function() {
-      Game._drawWholeMap(Game.attempt);
-      done(); }, 10);
-    return promise;
   } else {
-    Game.save();
-    Game.engine.lock();
-    this.acting = true;
+    Game._drawWholeMap(Game.attempt);
+    if (this.path.length > 0 && walkPath(Game.attempt)) {
+      var done = null,
+          promise = { then: function(cb) { done = cb; } };
+      setTimeout(function() { done(); }, 10);
+      return promise;
+    } else {
+      Game.save();
+      Game.engine.lock();
+      this.acting = true;
+    }
   }
 }
 
@@ -1261,7 +1261,7 @@ Player.prototype.clickRackTile = function(index, map) {
       Game.attempt.mode.pop();
     Game.attempt.mode.push(function(player, index, tiles, closeButton, actButton) {
         return function(loc) {
-          var clicked = false;
+          var clicked = false, cancelled = false;
           for (var i = 0; i < closeButton.length; i++)
             if (loc.x == closeButton[i].x && loc.y == closeButton[i].y) {
               for (var j = 0; j < tiles.length; j++) {
@@ -1272,6 +1272,7 @@ Player.prototype.clickRackTile = function(index, map) {
               }
               tiles.length = 0;
               clicked = true;
+              cancelled = true;
               break;
             }
           if (!clicked && actButton !== undefined)
@@ -1326,7 +1327,13 @@ Player.prototype.clickRackTile = function(index, map) {
               }
           if (clicked) {
             Game.attempt.mode.pop();
-            Game.save();
+            if (cancelled)
+              Game._drawWholeMap(Game.attempt);
+            else {
+              Game.save();
+              Game.attempt.player.acting = false;
+              Game.engine.unlock();
+            }
           }
         }; }(this, index, this.modalTiles, result.closeButton, result.actButton));
   }
@@ -1461,8 +1468,6 @@ Player.prototype.handleEvent = function(e) {
       this.click({x: coords[0], y: coords[1]},
                  getTileClickCoords(clientLoc, this, Game.display));
   }
-  if (Game.attempt.mode.length == 0 && !Game.attempt.complete)
-    Game._drawWholeMap(Game.attempt);
 }
     
 var Foe = function(kindOrState, level, x, y) {
