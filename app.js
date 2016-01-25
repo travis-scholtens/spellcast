@@ -890,8 +890,8 @@ var Game = {
                 healthIcon.glyph, healthIcon.color);
       var expLevelIndex = experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
       drawMeter(this.display, display.width - 1, meterTop, meterHeight,
-                experienceLevelDefinitions[expLevelIndex-1].expThreshold,
-                experienceLevelDefinitions[expLevelIndex].expThreshold,
+                levelChangedFor(attempt.player.experience).lastThreshold,
+                levelChangedFor(attempt.player.experience).threshold,
                 attempt.player.experience,
                 levelIcon.glyph, levelIcon.color);
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
@@ -1166,12 +1166,21 @@ Player.prototype.keyPress = function(code, level) {
     Game.engine.unlock();
 }
 
+var levelChangedFor = function(experience) {
+  var i, threshold, lastThreshold = 0;
+  for (i = 0; ; i++) {
+    threshold = i < experienceLevelDefinitions.length ?
+        experienceLevelDefinitions[i].expThreshold :
+        threshold + furtherExperienceThreshold;
+    if (experience < threshold)
+      return { index: i, lastThreshold: lastThreshold, threshold: threshold };
+    lastThreshold = threshold;
+  }
+}
+
 var levelFor = function(experience) {
-  var i;
-  for (i = 0; i < experienceLevelDefinitions.length; i++)
-    if (experience < experienceLevelDefinitions[i].expThreshold)
-      return experienceLevelDefinitions[i];
-  return experienceLevelDefinitions[experienceLevelDefinitions.length-1];
+  return experienceLevelDefinitions[
+      Math.min(levelChangedFor(experience).index, experienceLevelDefinitions.length-1)];
 }
 
 var findWordWithBlank = function(word) {
@@ -1304,10 +1313,14 @@ Player.prototype.clickRackTile = function(index, map) {
                     player.experience += score;
                     Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine });
                     Game.attempt.message('You cast ' + formatCastSpell(word, shrine) + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
-                    if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
-                        experienceLevelDefinitions.indexOf(levelFor(previousExperience))) {
+                    if (levelChangedFor(player.experience).index >
+                        levelChangedFor(previousExperience).index) {
                       player.woundedness = 0;
-                      Game.attempt.message('You have improved.');
+                      if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
+                          experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
+                        Game.attempt.message('You have improved and your health is restored.');
+                      else
+                        Game.attempt.message('Your health is restored.');
                     }
                     if (word == 'yendor') {
                       Game.attempt.ascended = true;
