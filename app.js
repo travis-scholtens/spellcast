@@ -593,7 +593,6 @@ var handle = function(e) {
        (new Date().getTime() - Game.completedAt) > 1000)) {
     clearSavedGame();
     Game.newAttempt();
-    Game.engine.unlock();
   } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting)
       Game.attempt.player.handleEvent(e);
   e.preventDefault();
@@ -666,7 +665,6 @@ var Game = {
         if (state && state.v === 7) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
-          this.engine.unlock();
         } else
           this.showTutorial();
     },
@@ -684,7 +682,6 @@ var Game = {
     },
 
     newAttempt: function(state) {
-      this.engine.lock();
       this.scheduler.clear();
       this.attempt = new Attempt(state);
       if (state) {
@@ -699,10 +696,11 @@ var Game = {
         this.attempt.player.level = this.attempt.levels[state.player.levelIndex];
       }
       this._drawWholeMap(this.attempt);
-      this.engine.unlock();
 
       Game.scheduler.add(this.attempt.player, true);
       Game.schedule(this.attempt.player.level.foes);
+
+      this.engine.unlock();
     },
 
     schedule: function(foes) {
