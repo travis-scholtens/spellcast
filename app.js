@@ -183,7 +183,7 @@ Attempt.prototype.restore = function(state) {
   this.player = new Player(state.player);
   this.rack = state.rack.map(function(c) { return new Corpse(c.g, c.t); });
   this.spellsCast = state.c.map(function(s) {
-    return { tiles: s[0], depth: s[1] };
+    return { tiles: s[0], depth: s[1], shrine: s[2] };
   });
 }
 
@@ -194,7 +194,7 @@ Attempt.prototype.state = function() {
       a: this.ascended,
       f: this.complete,
       c: this.spellsCast.map(function(s) {
-           return [s.tiles, s.depth];
+           return [s.tiles, s.depth, s.shrine];
          })
       };
 }
@@ -662,7 +662,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 7) {
+        if (state && state.v === 8) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
         } else
@@ -671,7 +671,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 7,
+          gameState = { v: 8,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
