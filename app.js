@@ -588,13 +588,19 @@ var clearSavedGame = function() {
 }
 
 var handle = function(e) {
+  var acted = false;
   if (!Game.attempt ||
       (Game.attempt.complete &&
        (new Date().getTime() - Game.completedAt) > 1000)) {
     clearSavedGame();
     Game.newAttempt();
+    acted = true;
   } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting)
-      Game.attempt.player.handleEvent(e);
+    acted = Game.attempt.player.handleEvent(e);
+  if (acted) {
+    this.acting = false;
+    Game.engine.unlock();
+  }
   e.preventDefault();
 }
 
@@ -665,6 +671,7 @@ var Game = {
         if (state && state.v === 8) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
+          this.engine.start();
         } else
           this.showTutorial();
     },
@@ -699,8 +706,6 @@ var Game = {
 
       Game.scheduler.add(this.attempt.player, true);
       Game.schedule(this.attempt.player.level.foes);
-
-      this.engine.unlock();
     },
 
     schedule: function(foes) {
@@ -1022,21 +1027,19 @@ var walkPath = function(attempt) {
 }
 
 Player.prototype.act = function() {
-  if (Game.attempt.complete) {
-    Game.engine.lock();
+  Game.engine.lock();
+  if (Game.attempt.complete)
     Game.showGameSummary(Game.attempt);
-  } else {
+  else {
+    this.acting = true;
     Game._drawWholeMap(Game.attempt);
-    if (this.path.length > 0 && walkPath(Game.attempt)) {
-      var done = null,
-          promise = { then: function(cb) { done = cb; } };
-      setTimeout(function() { done(); }, 10);
-      return promise;
-    } else {
+    if (this.path.length > 0 && walkPath(Game.attempt))
+      return { then: function(cb) {
+                       Game.engine.unlock();
+                       setTimeout(function() { cb(); }, 10);
+                     } };
+    else
       Game.save();
-      Game.engine.lock();
-      this.acting = true;
-    }
   }
 }
 
@@ -1131,7 +1134,7 @@ var dealDamage = function(attempt, loc, foe) {
 }
 
 Player.prototype.keyPress = function(code, level) {
-    if (Game.attempt.mode.length > 0) return;
+    if (Game.attempt.mode.length > 0) return false;
 
     var keyMap = {};
     keyMap[38] = 0;
@@ -1140,7 +1143,7 @@ Player.prototype.keyPress = function(code, level) {
     keyMap[37] = 3;
 
     /* one of numpad directions? */
-    if (!(code in keyMap)) { return; }
+    if (!(code in keyMap)) { return false; }
 
     /* is there a free space? */
     var dir = ROT.DIRS[4][keyMap[code]];
@@ -1148,7 +1151,7 @@ Player.prototype.keyPress = function(code, level) {
     var newY = this._y + dir[1];
     var newKey = newX + "," + newY;
     if (!(newKey in level.map && level.map[newKey].passable))
-      return;
+      return false;
 
     var contents = level.map[newKey].contents;
     if (contents != null)
@@ -1160,8 +1163,7 @@ Player.prototype.keyPress = function(code, level) {
       useStairs(Game.attempt);
       revealFrom(this.level, {x: this._x, y: this._y});
     }
-    this.acting = false;
-    Game.engine.unlock();
+    return true;
 }
 
 var levelChangedFor = function(experience) {
@@ -1366,9 +1368,11 @@ Player.prototype.click = function(loc, tileLoc) {
     var rackTileIndex = Game.rackTileLocations[loc.x];
     if (rackTileIndex !== undefined)
       this.clickRackTile(rackTileIndex, this.level.map);
-  } else if (Game.attempt.mode.length > 0)
+    return false;
+  } else if (Game.attempt.mode.length > 0) {
     Game.attempt.mode[Game.attempt.mode.length-1](loc);
-  else if (tileLoc) {
+    return false;
+  } else if (tileLoc) {
     var tile = this.level.map[tileLoc.x + ',' + tileLoc.y];
     if (tile.revealed) {
       var playerLoc = { x: this._x, y: this._y },
@@ -1381,8 +1385,7 @@ Player.prototype.click = function(loc, tileLoc) {
         this.path = path;
         walkPath(Game.attempt);
       }
-      this.acting = false;
-      Game.engine.unlock();
+      return true;
     }
   }
 }
@@ -1471,14 +1474,15 @@ var getTileClickCoords = function(clientLoc, player, display) {
 
 Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
-    this.keyPress(e.keyCode, this.level);
+    return this.keyPress(e.keyCode, this.level);
   else {
     var clientLoc = clientCoords(e);
     var coords = Game.display.eventToClientPosition(clientLoc);
     if (coords[0] >= 0 && coords[1] >= 0)
-      this.click({x: coords[0], y: coords[1]},
-                 getTileClickCoords(clientLoc, this, Game.display));
+      return this.click({x: coords[0], y: coords[1]},
+                        getTileClickCoords(clientLoc, this, Game.display));
   }
+  return false;
 }
     
 var Foe = function(kindOrState, level, x, y) {
