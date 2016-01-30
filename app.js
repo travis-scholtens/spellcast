@@ -810,6 +810,7 @@ var Game = {
           'Fight monsters',
           'Use their corpses to cast spells for more power',
           'Start with the spell "AA" (a kind of lava)',
+          'Spells cast on a shrine (like %b{' + shrines[2].color + '} %b{}) are worth more',
           '7-corpse spells get a bonus',
           'Cast the spell of "YENDOR" to win',
           'Source: bitbucket.org/tps12/spellcast'
