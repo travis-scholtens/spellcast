@@ -73,19 +73,21 @@ var Shrine = function(multiplier, isWholeWord, frequency, color, name) {
 };
 
 var shrines = [
-    new Shrine(2, false, 24, 'lightblue', 'Biglyphica'),
-    new Shrine(3, false, 12, 'blue', 'Trirunius'),
-    new Shrine(2, true, 16, 'pink', 'Duverbia'),
-    new Shrine(3, true, 8, 'red', 'Troilogos'),
+    new Shrine(2, false, 6, 'lightblue', 'Biglyphica'),
+    new Shrine(3, false, 3, 'blue', 'Trirunius'),
+    new Shrine(2, true, 4, 'pink', 'Duverbia'),
+    new Shrine(3, true, 2, 'red', 'Troilogos'),
 ];
 
-var shrineDistribution = function(ss) {
-  var map = {};
-  ss.forEach(function(s, i) {
-    map[i] = s.frequency;
-  });
-  return map;
-}(shrines);
+var shrineDistribution = function() {
+  return function(ss) {
+           var map = {};
+           ss.forEach(function(s, i) {
+             map[i] = s.frequency;
+           });
+           return map;
+         }(shrines);
+};
 
 var FoeKind = function(glyph, name, color, health, value, frequency) {
   this.glyph = glyph;
@@ -127,10 +129,11 @@ var Attempt = function(state) {
     this.ascended = false;
     this.complete = false;
     this.player = null;
+    this.shrines = shrineDistribution();
     this.rack = [];
     this.spellsCast = [];
   
-    this.levels = [_generateMap(1, this.rngState)];
+    this.levels = [_generateMap(1, this.rngState, this.shrines)];
     localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
 
     var colorBase = ROT.RNG.getUniformInt(80, 255);
@@ -181,6 +184,7 @@ Attempt.prototype.restore = function(state) {
   this.complete = state.f;
   this.levels = [];
   this.player = new Player(state.player);
+  this.shrines = state.sh;
   this.rack = state.rack.map(function(c) { return new Corpse(c.g, c.t); });
   this.spellsCast = state.c.map(function(s) {
     return { tiles: s[0], depth: s[1], shrine: s[2] };
@@ -190,6 +194,7 @@ Attempt.prototype.restore = function(state) {
 Attempt.prototype.state = function() {
   return { player: this.player.state(),
       rack: this.rack.map(function(c) { return { g: c.glyph, t: Game.scheduler.getTime() - c.timeOfDeath }; }),
+      sh: this.shrines,
       s: this.rngState,
       a: this.ascended,
       f: this.complete,
@@ -286,7 +291,7 @@ var floorSpaces = function(level) {
   return floor;
 }
 
-var _generateMap = function(depth, rngState) {
+var _generateMap = function(depth, rngState, shrineDist) {
   var level = { depth: depth },
       dim = level.depth == 1 ? 24 :
             level.depth == 2 ? 36 :
@@ -358,6 +363,8 @@ var _generateMap = function(depth, rngState) {
     do {
       shrineRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
     } while (rooms.length > 2 && (shrineRoom == upRoom || shrineRoom == downRoom));
+  else if (ROT.RNG.getUniformInt(0, 1))
+    shrineRoom = null;
   else {
     shrineRoom = ROT.RNG.getUniformInt(0, rooms.length-1);
     if (shrineRoom == upRoom || shrineRoom == downRoom)
@@ -374,12 +381,16 @@ var _generateMap = function(depth, rngState) {
   level.down = { x: downCenter[0], y: downCenter[1] };
 
   var shrineCenter = shrineRoom !== null ? rooms[shrineRoom].getCenter() : null;
-  level.shrine = shrineRoom !== null ?
+  level.shrine = shrineRoom !== null &&
+                     shrines.map(function(_,i) { return shrineDist[i]; })
+                            .reduce(function(a,b) { return a+b; }) > 0 ?
                  { x: shrineCenter[0] + 1,
                    y: shrineCenter[1],
                    type: level.depth == 1 ? 2 :
-                         ROT.RNG.getWeightedValue(shrineDistribution) } :
+                         ROT.RNG.getWeightedValue(shrineDist) } :
                  null;
+  if (level.shrine !== null)
+    shrineDist[level.shrine.type]--;
 
   var kinds = foeDistribution(foeKinds, level.depth);
   if (level.depth > 1) {
@@ -406,7 +417,7 @@ var _generateMap = function(depth, rngState) {
 Attempt.prototype.levelBelow = function(level) {
   var index = this.levels.indexOf(level) + 1;
   if (index == this.levels.length)
-    this.levels.push(_generateMap(index+1, this.rngState));
+    this.levels.push(_generateMap(index+1, this.rngState, this.shrines));
   return this.levels[index];
 }
 
@@ -668,7 +679,7 @@ var Game = {
 
         var serializedState = localStorage.spellyGameState,
             state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 8) {
+        if (state && state.v === 9) {
           ROT.RNG.setState(state.rng);
           this.newAttempt(state.attempt);
           this.engine.start();
@@ -678,7 +689,7 @@ var Game = {
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 8,
+          gameState = { v: 9,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
