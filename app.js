@@ -1402,23 +1402,6 @@ Player.prototype.click = function(loc, tileLoc) {
   }
 }
 
-ROT.Display.prototype.eventToClientPosition = function(clientLoc) {
-  var x = clientLoc.x,
-      y = clientLoc.y;
-
-  var rect = this._context.canvas.getBoundingClientRect();
-  x -= rect.left;
-  y -= rect.top;
-
-  x *= this._context.canvas.width / this._context.canvas.clientWidth;
-  y *= this._context.canvas.height / this._context.canvas.clientHeight;
-
-  if (x < 0 || y < 0 || x >= this._context.canvas.width || y >= this._context.canvas.height)
-    return [-1, -1];
-
-  return this._backend.eventToPosition(x, y);
-}
-
 var clientDimensionToTile = function(
     playerLoc, displaySize, clientLoc, clientBound, canvasSize, clientSize, spacing) {
   return playerLoc - (displaySize/2) +
@@ -1488,11 +1471,10 @@ Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
     return this.keyPress(e.keyCode, this.level);
   else {
-    var clientLoc = clientCoords(e);
-    var coords = Game.display.eventToClientPosition(clientLoc);
+    var coords = Game.display.eventToPosition(e);
     if (coords[0] >= 0 && coords[1] >= 0)
       return this.click({x: coords[0], y: coords[1]},
-                        getTileClickCoords(clientLoc, this, Game.display));
+                        getTileClickCoords(clientCoords(e), this, Game.display));
   }
   return false;
 }
