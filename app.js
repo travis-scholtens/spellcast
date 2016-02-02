@@ -599,20 +599,26 @@ var clearSavedGame = function() {
 }
 
 var handle = function(e) {
-  var acted = false;
+  var handled = false,
+      acted = false;
   if (!Game.attempt ||
       (Game.attempt.complete &&
        (new Date().getTime() - Game.completedAt) > 1000)) {
     clearSavedGame();
     Game.newAttempt();
     acted = true;
-  } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting)
+    handled = true;
+  } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting &&
+             (!e.touches || e.touches.length > 0)) {
     acted = Game.attempt.player.handleEvent(e);
+    handled = true;
+  }
   if (acted) {
     this.acting = false;
     Game.engine.unlock();
   }
-  e.preventDefault();
+  if (handled)
+    e.preventDefault();
 }
 
 var surroundText = function(text, color) {
