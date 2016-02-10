@@ -114,10 +114,13 @@ var fovFrom = function(level, loc, radius, callback) {
       });
 }
 
-var revealFrom = function(level, fromLoc) {
+var revealFrom = function(attempt, level, fromLoc) {
   fovFrom(level, fromLoc, 7,
       function(loc) {
-        this[loc.x + ',' + loc.y].revealed = true;
+        var tile = this[loc.x + ',' + loc.y];
+        if (!tile.revealed && level.shrine && loc.x == level.shrine.x && loc.y == level.shrine.y)
+          attempt.message('You notice a Shrine of ' + shrines[level.shrine.type].name + '.');
+        tile.revealed = true;
       }.bind(level.map));
 }
 
@@ -140,7 +143,7 @@ var Attempt = function(state) {
     this.player = new Player(this.levels[0],
         this.levels[0].playerStart.x, this.levels[0].playerStart.y,
         'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
-    revealFrom(this.player.level, {x: this.player._x, y: this.player._y});
+    revealFrom(this, this.player.level, {x: this.player._x, y: this.player._y});
   }
   this.messages = [];
   this.mode = [];
@@ -855,16 +858,8 @@ var Game = {
       var levelText = 'L: ' +
           experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
       this.display.drawText(display.width - levelText.length, 0, levelText);
-      var messages = wrapMessages(attempt.messages, display.width);
-      var messageCount = messages.length;
-      for (var i = 0; i < messageCount; i++) {
-        for (var y = 0; y < display.width; y++)
-          this.display.draw(y, i + 1, '');
-        this.display.drawText(messages[i][0] === ' ' ? 2 : 0, i + 1, messages[i]);
-      }
-      attempt.messages.length = 0;
       for (var dx = 1; dx < display.width - 1; dx++)
-        for (var dy = messageCount + 1; dy < display.height - 3; dy++) {
+        for (var dy = 1; dy < display.height - 3; dy++) {
           var x = attempt.player.getX() - display.width/2 + dx,
               y = attempt.player.getY() - display.height/2 + dy,
               glyph = '',
@@ -885,11 +880,18 @@ var Game = {
                     attempt.player.path.length = 0;
                   tile.contents.revealed = true;
                 } else if (tile.corpse != null) {
-                  if (tile.corpse.rotted())
+                  if (tile.corpse.rotted()) {
+                    attempt.message('The ' + Game.glyphKind[tile.corpse.glyph].name +
+                                    ' corpse rots away to nothing.');
                     tile.corpse = null;
-                  else {
+                    glyph = tile.glyph;
+                  } else {
                     glyph = tile.corpse.glyph == '.' ? '\u25a0' : tile.corpse.glyph;
                     color = tile.corpse.rotting() ? 'darkgreen' : 'darkgray';
+                    if (this.display.lastDrawnAt !== undefined &&
+                        tile.corpse.rotting() && !tile.corpse.rotting(this.display.lastDrawnAt))
+                      attempt.message('The ' + Game.glyphKind[tile.corpse.glyph].name +
+                                      ' corpse has begun to rot.');
                   }
                 } else if (x == level.up.x && y == level.up.y)
                   glyph = '\u261d';
@@ -904,6 +906,13 @@ var Game = {
           }
           this.display.draw(dx, dy, glyph, color, bg);
         }
+      var messages = wrapMessages(attempt.messages, display.width);
+      var messageCount = messages.length;
+      for (var i = 0; i < messageCount; i++) {
+        for (var y = 0; y < display.width; y++)
+          this.display.draw(y, i + 1, '');
+        this.display.drawText(messages[i][0] === ' ' ? 2 : 0, i + 1, messages[i]);
+      }
       var meterTop = messageCount + 1,
           meterHeight = display.height - 3 - messageCount - 2;
       drawMeter(this.display, 0, meterTop, meterHeight,
@@ -916,6 +925,7 @@ var Game = {
                 attempt.player.experience,
                 levelIcon.glyph, levelIcon.color);
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
+      this.display.lastDrawnAt = this.scheduler.getTime();
     },
 
     drawRackTiles: function(corpse) {
@@ -960,8 +970,10 @@ var Corpse = function(glyph, timeSinceDeath) {
   this.timeOfDeath = Game.scheduler.getTime() - timeSinceDeath;
 };
 
-Corpse.prototype.rotting = function() {
-  return (Game.scheduler.getTime() - this.timeOfDeath) > 0.9;
+Corpse.prototype.rotting = function(atTime) {
+  if (atTime === undefined)
+    atTime = Game.scheduler.getTime();
+  return (atTime - this.timeOfDeath) > 0.9;
 };
 
 Corpse.prototype.rotted = function() {
@@ -1038,7 +1050,7 @@ var walkPath = function(attempt) {
       path.length = 0;
     if (level.shrine && player._x == level.shrine.x && player._y == level.shrine.y)
       path.length = 0;
-    revealFrom(player.level, {x: player._x, y: player._y});
+    revealFrom(attempt, player.level, {x: player._x, y: player._y});
     return true;
   }
   return false;
@@ -1051,6 +1063,7 @@ Player.prototype.act = function() {
   else {
     this.acting = true;
     Game._drawWholeMap(Game.attempt);
+    Game.attempt.messages.length = 0;
     if (this.path.length > 0 && walkPath(Game.attempt))
       return { then: function(cb) {
                        Game.engine.unlock();
@@ -1179,7 +1192,7 @@ Player.prototype.keyPress = function(code, level) {
       this._y = newY;
       takeCorpse(level.map, this._x, this._y, Game.attempt);
       useStairs(Game.attempt);
-      revealFrom(this.level, {x: this._x, y: this._y});
+      revealFrom(Game.attempt, this.level, {x: this._x, y: this._y});
     }
     return true;
 }
@@ -1312,7 +1325,10 @@ Player.prototype.clickRackTile = function(index, map) {
                     Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing');
                   else {
                     dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].corpse);
-                    Game.attempt.message('You drop the ' + name + ' corpse.');
+                    if (tiles[0].corpse.rotting())
+                      Game.attempt.message('You drop the ' + name + ' corpse, which has begun to rot.');
+                    else
+                      Game.attempt.message('You drop the ' + name + ' corpse.');
                   }
                 } else {
                   var spell = '';
