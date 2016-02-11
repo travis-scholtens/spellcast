@@ -891,7 +891,7 @@ var Game = {
                     if (this.display.lastDrawnAt !== undefined &&
                         tile.corpse.rotting() && !tile.corpse.rotting(this.display.lastDrawnAt))
                       attempt.message('The ' + Game.glyphKind[tile.corpse.glyph].name +
-                                      ' corpse has begun to rot.');
+                                      ' corpse begins to rot.');
                   }
                 } else if (x == level.up.x && y == level.up.y)
                   glyph = '\u261d';
@@ -1322,11 +1322,11 @@ Player.prototype.clickRackTile = function(index, map) {
                 if (tiles.length == 1) {
                   var name = Game.glyphKind[tiles[0].corpse.glyph].name;
                   if (tiles[0].corpse.rotted())
-                    Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing');
+                    Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing.');
                   else {
                     dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].corpse);
                     if (tiles[0].corpse.rotting())
-                      Game.attempt.message('You drop the ' + name + ' corpse, which has begun to rot.');
+                      Game.attempt.message('You drop the ' + name + ' corpse, which begins to rot.');
                     else
                       Game.attempt.message('You drop the ' + name + ' corpse.');
                   }
