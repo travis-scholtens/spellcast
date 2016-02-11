@@ -125,9 +125,10 @@ var revealFrom = function(attempt, level, fromLoc) {
 }
 
 var Attempt = function(state) {
-  if (state)
+  if (state) {
     this.restore(state);
-  else {
+    this.messages = [];
+  } else {
     this.rngState = ROT.RNG.getState();
     this.ascended = false;
     this.complete = false;
@@ -143,9 +144,9 @@ var Attempt = function(state) {
     this.player = new Player(this.levels[0],
         this.levels[0].playerStart.x, this.levels[0].playerStart.y,
         'rgb(' + colorBase + ',' + (colorBase - 40) + ',' + (colorBase - 80) + ')');
+    this.messages = [];
     revealFrom(this, this.player.level, {x: this.player._x, y: this.player._y});
   }
-  this.messages = [];
   this.mode = [];
 }
 
