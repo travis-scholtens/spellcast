@@ -1062,8 +1062,14 @@ Player.prototype.act = function() {
     Game.showGameSummary(Game.attempt);
   else {
     this.acting = true;
-    Game._drawWholeMap(Game.attempt);
-    Game.attempt.messages.length = 0;
+    if (function() {
+      var messageCount = Game.attempt.messages.length;
+      Game._drawWholeMap(Game.attempt);
+      return Game.attempt.messages.length > messageCount;
+    }())
+      this.path.length = 0;
+    else
+      Game.attempt.messages.length = 0;
     if (this.path.length > 0 && walkPath(Game.attempt))
       return { then: function(cb) {
                        Game.engine.unlock();
