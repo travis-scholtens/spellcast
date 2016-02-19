@@ -398,8 +398,13 @@ var _generateMap = function(depth, rngState, shrineDist) {
 
   var kinds = foeDistribution(foeKinds, level.depth);
   if (level.depth > 1) {
-    var totalTiles = foeKinds.slice(0, level.depth).map(function(k){return k.frequency;}).reduce(function(a,b){return a+b;}),
-        blankScale = shapeshifter.frequency / (totalTiles + shapeshifter.frequency);
+    var countTiles = function(ks) {
+                       return ks.map(function(k){return k.frequency;})
+                                .reduce(function(a,b){return a+b;});
+                     },
+        levelTiles = countTiles(foeKinds.slice(0, level.depth)),
+        totalTiles = countTiles(foeKinds),
+        blankScale = levelTiles / totalTiles;
     kinds[shapeshifter.glyph] = shapeshifter.frequency * blankScale;
   }
   level.foes = [];
