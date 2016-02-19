@@ -605,16 +605,21 @@ var clearSavedGame = function() {
     delete localStorage[key];
     i++;
   }
+  Game.scheduler.clear();
+  Game.attempt = null;
 }
 
 var handle = function(e) {
   var handled = false,
       acted = false;
-  if (!Game.attempt ||
-      (Game.attempt.complete &&
-       (new Date().getTime() - Game.completedAt) > 1000)) {
-    clearSavedGame();
+  if (!Game.attempt) {
     Game.newAttempt();
+    acted = true;
+    handled = true;
+  } else if (Game.attempt.complete &&
+             (new Date().getTime() - Game.completedAt) > 1000) {
+    clearSavedGame();
+    Game.showTutorial();
     acted = true;
     handled = true;
   } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting &&
