@@ -1139,11 +1139,13 @@ var useStairs = function(attempt) {
     Game.save();
     player.level = attempt.levelBelow(level);
     stairLoc = attempt.player.level.up;
+    attempt.message('You descend deeper into the dungeon.');
   }
   else if (player._x == level.up.x && player._y == level.up.y) {
     Game.save();
     player.level = attempt.levelAbove(level);
     stairLoc = player.level.down;
+    attempt.message('You climb back towards the surface.');
   }
   if (player.level != level) {
     Game.unschedule(level.foes);
