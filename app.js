@@ -837,6 +837,14 @@ var Game = {
       ].map(function(line) { return '\u2022 ' + line; }));
     },
 
+    showTitle: function() {
+      var i, j;
+      this.display.clear();
+      for (i = 0; i < logo.length; i++)
+        for (j = 0; j < logo[i].length; j++)
+          this.display.draw(j+1, i, logo[i][j]);
+    },
+
     showGameSummary: function(attempt) {
       var player = attempt.player,
           level = player.level,

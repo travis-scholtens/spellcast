@@ -62,6 +62,11 @@ experience.js: bingo.py
 foes.js: bingo.py
 	python3 bingo.py
 
+logo.js: logo.txt escapeuni.py
+	echo "var logo = [" > $@
+	python3 escapeuni.py < logo.txt >> $@
+	echo "];" >> $@
+
 words_am.js: $(WORDS_FILE) gen_words.sh
 	$(eval WORDS=$(shell mktemp))
 	grep -v '^.$$' $(WORDS_FILE) | grep -v ........ | grep '^[a-m]' > $(WORDS)
@@ -80,8 +85,8 @@ compiled_words_am.js: words_am.js
 compiled_words_nz.js: words_nz.js
 	closure-compiler --js words_nz.js --language_in ECMASCRIPT5 --js_output_file compiled_words_nz.js
 
-a.out.js: rot.js/rot.js app.js experience.js foes.js
-	closure-compiler --js rot.js/rot.js --js app.js --js experience.js --js foes.js --language_in ECMASCRIPT5 --js_output_file a.out.js
+a.out.js: rot.js/rot.js app.js experience.js foes.js logo.js
+	closure-compiler --js rot.js/rot.js --js app.js --js experience.js --js foes.js --js logo.js --language_in ECMASCRIPT5 --js_output_file a.out.js
 
 clean:
 	rm dist/*
