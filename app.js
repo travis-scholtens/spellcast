@@ -412,7 +412,8 @@ var _generateMap = function(depth, rngState, shrineDist) {
               level.depth == 2 ? [4, 5] :
               level.depth == 3 ? [6, 9] :
               level.depth == 4 ? [9, 13] :
-              [12, 18];
+              level.depth <= 26 ? [12, 18] :
+              [2*level.depth - 41, 2*level.depth - 33];
   for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
     var foe = new Foe(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
@@ -1265,13 +1266,20 @@ dropCorpse = function(map, x, y, corpse) {
 var useStairs = function(attempt) {
   var player = attempt.player,
       level = player.level,
+      nextExists,
       stairLoc;
   if (player._x == level.down.x && player._y == level.down.y) {
     player.level.shrine = null;
     Game.save();
+    nextExists = attempt.levels.indexOf(level) + 1 < attempt.levels.length;
     player.level = attempt.levelBelow(level);
     stairLoc = attempt.player.level.up;
-    attempt.message('You descend deeper into the dungeon.');
+    if (nextExists)
+      attempt.message('You descend deeper into the dungeon.');
+    else {
+      player.woundedness = 0;
+      attempt.message('You descend deeper into the dungeon and your health is restored.');
+    }
   }
   else if (player._x == level.up.x && player._y == level.up.y) {
     Game.save();
@@ -1525,12 +1533,9 @@ Player.prototype.clickRackTile = function(index, map) {
                     Game.attempt.message('You cast ' + formatCastSpell(word, shrine) + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (levelChangedFor(player.experience).index >
                         levelChangedFor(previousExperience).index) {
-                      player.woundedness = 0;
                       if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                           experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
-                        Game.attempt.message('You have improved and your health is restored.');
-                      else
-                        Game.attempt.message('Your health is restored.');
+                        Game.attempt.message('You have improved.');
                     }
                     if (word == 'yendor') {
                       Game.completeGame(Game.attempt, true);
