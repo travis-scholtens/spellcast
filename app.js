@@ -658,6 +658,26 @@ var formatCastSpell = function(text, shrineType) {
         upperCasedText.substr(bestLetterIndex+1);
 }
 
+var drawButton = function(display, button, origin, xmax, ymax) {
+  for (x = 0; x < button.length + 2; x++)
+    for (y = 0; y < 3; y++) {
+      glyph = x == 0 ? (y == 0 ? '\u256d' :
+                        y == 2 ? '\u2570' :
+                        '\u2502') :
+              x == button.length + 1 ? (y == 0 ? '\u256e' :
+                                        y == 2 ? '\u256f' :
+                                        '\u2502') :
+              y == 0 || y == 2 ? '\u2500' :
+              '';
+      display.draw(origin.x + xmax/2 - button.length/2 + x - 1,
+                   origin.y + ymax - 4 + y,
+                   glyph);
+    }
+  display.drawText(origin.x + xmax/2 - button.length/2,
+                   origin.y + ymax - 3,
+                   button);
+}
+
 var Game = {
     display: null,
     engine: null,
@@ -791,23 +811,7 @@ var Game = {
            { x: origin.x + 1.5,
              y: origin.y + 1 }];
       if (button !== undefined) {
-        for (x = 0; x < button.length + 2; x++)
-          for (y = 0; y < 3; y++) {
-            glyph = x == 0 ? (y == 0 ? '\u256d' :
-                              y == 2 ? '\u2570' :
-                              '\u2502') :
-                    x == button.length + 1 ? (y == 0 ? '\u256e' :
-                                              y == 2 ? '\u256f' :
-                                              '\u2502') :
-                    y == 0 || y == 2 ? '\u2500' :
-                    '';
-            this.display.draw(origin.x + xmax/2 - button.length/2 + x - 1,
-                              origin.y + ymax - 4 + y,
-                              glyph);
-          }
-        this.display.drawText(origin.x + xmax/2 - button.length/2,
-                              origin.y + ymax - 3,
-                              button);
+        drawButton(this.display, button, origin, xmax, ymax);
         result.actButton = [];
         for (x = 0; x < button.length; x++)
           result.actButton.push({x: origin.x + xmax/2 - button.length/2 + x,
