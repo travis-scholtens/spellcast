@@ -837,12 +837,20 @@ var Game = {
       ].map(function(line) { return '\u2022 ' + line; }));
     },
 
+    logoColor: function(x, y) {
+      var r = 255,
+          g = y > 0.5 ? 255 : Math.floor(255 * y/0.5),
+          b = y < 0.5 ? 0 : Math.floor(255 * (y - 0.5)/0.5);
+      return 'rgb(' + [r,g,b].join([separator=',']) + ')';
+    },
+
     showTitle: function() {
       var i, j;
       this.display.clear();
       for (i = 0; i < logo.length; i++)
         for (j = 0; j < logo[i].length; j++)
-          this.display.draw(j+1, i, logo[i][j]);
+          this.display.draw(j+1, i, logo[i][j],
+                            this.logoColor(j/logo[i].length, i/logo.length));
     },
 
     showGameSummary: function(attempt) {
