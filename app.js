@@ -612,14 +612,21 @@ var clearSavedGame = function() {
 var handle = function(e) {
   var handled = false,
       acted = false;
-  if (!Game.attempt) {
-    Game.newAttempt();
+  if (Game.titleButtons) {
+    if (handleTitleClick(e)) {
+      delete Game.titleButtons;
+      acted = true;
+      handled = true;
+    }
+  } else if (Game.showingTutorial) {
+    Game.showTitle();
+    Game.showingTutorial = false;
     acted = true;
     handled = true;
   } else if (Game.attempt.complete &&
              (new Date().getTime() - Game.completedAt) > 1000) {
     clearSavedGame();
-    Game.showTutorial();
+    Game.showTitle();
     acted = true;
     handled = true;
   } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting &&
@@ -673,12 +680,13 @@ var drawButton = function(display, button, origin, xmax, ymax) {
                    origin.y + ymax - 4 + y,
                    glyph);
     }
-  display.drawText(origin.x + xmax/2 - button.length/2,
+  display.drawText(origin.x + xmax/2 - button.length/2 + button.search(/[^ ]/),
                    origin.y + ymax - 3,
                    button);
 }
 
 var Game = {
+    version: 9,
     display: null,
     engine: null,
     scheduler: null,
@@ -717,19 +725,12 @@ var Game = {
 
         this.engine = new ROT.Engine(this.scheduler);
 
-        var serializedState = localStorage.spellyGameState,
-            state = serializedState ? JSON.parse(serializedState) : undefined;
-        if (state && state.v === 9) {
-          ROT.RNG.setState(state.rng);
-          this.newAttempt(state.attempt);
-          this.engine.start();
-        } else
-          this.showTutorial();
+        this.showTitle();
     },
 
     save: function() {
       var i = this.attempt.player.level.depth-1,
-          gameState = { v: 9,
+          gameState = { v: this.version,
                         rng: ROT.RNG.getState(),
                         attempt: this.attempt.state() },
           levelState = this.attempt.levelState(i),
@@ -830,6 +831,7 @@ var Game = {
     },
 
     showTutorial: function() {
+      this.showingTutorial = true;
       this.showTextScreen([
           'Fight monsters',
           'Use their corpses to cast spells for more power',
@@ -848,13 +850,59 @@ var Game = {
       return 'rgb(' + [r,g,b].join([separator=',']) + ')';
     },
 
-    showTitle: function() {
+    drawLogo: function(y) {
       var i, j;
       this.display.clear();
       for (i = 0; i < logo.length; i++)
         for (j = 0; j < logo[i].length; j++)
-          this.display.draw(j+1, i, logo[i][j],
+          this.display.draw(j+1, y+i, logo[i][j],
                             this.logoColor(j/logo[i].length, i/logo.length));
+      return y + logo.length;
+    },
+
+    showTitle: function() {
+      var spacing = 4,
+          origin = { x: 0, y: 0 },
+          xmax = this.display.getOptions().width,
+          ymax,
+          x,
+          y = 3,
+          i,
+          gameInProgress = function(gameState) {
+                             if (gameState === undefined) return undefined;
+                             var state = JSON.parse(localStorage.spellyGameState);
+                             return state.v === Game.version && !state.attempt.f ?
+                                 state : undefined;
+                           }(localStorage.spellyGameState),
+          buttons = [
+            { text: gameInProgress !== undefined ? 'Resume  Game' : '  New Game  ',
+              action: gameInProgress !== undefined ?
+                      function() {
+                        Game.display.clear();
+                        ROT.RNG.setState(gameInProgress.rng);
+                        Game.newAttempt(gameInProgress.attempt);
+                        Game.engine.start();
+                      } :
+                      function() {
+                        Game.display.clear();
+                        Game.newAttempt();
+                      } },
+            { text: 'Instructions',
+              action: function() { Game.showTutorial.call(Game); } },
+          ];
+
+      y = this.drawLogo(y) + 1 + spacing;
+
+      this.titleButtons = buttons;
+      for (i = 0; i < this.titleButtons.length; i++) {
+        ymax = y + spacing * i;
+        drawButton(this.display, this.titleButtons[i].text, origin, xmax, ymax);
+        this.titleButtons[i].locs = [];
+        for (x = 0; x < this.titleButtons[i].text.length; x++)
+          this.titleButtons[i].locs.push(
+              {x: origin.x + xmax/2 - this.titleButtons[i].text.length/2 + x,
+               y: origin.y + ymax - 3});
+      }
     },
 
     showGameSummary: function(attempt) {
@@ -1526,6 +1574,21 @@ var getTileClickCoords = function(clientLoc, player, display) {
     }
   candidates.sort(function(a,b) { return a[1] - b[1]; });
   return candidates.length ? candidates[0][0] : undefined;
+}
+
+var handleTitleClick = function(e) {
+  var coords, i, j;
+
+  if (e.type == 'keydown') return false;
+  coords = Game.display.eventToPosition(e);
+  if (coords[0] >= 0 && coords[1] >= 0)
+    for (i = 0; i < Game.titleButtons.length; i++)
+      for (j = 0; j < Game.titleButtons[i].locs.length; j++)
+        if (Game.titleButtons[i].locs[j].x == coords[0] &&
+            Game.titleButtons[i].locs[j].y == coords[1]) {
+          Game.titleButtons[i].action();
+          return true;
+        }
 }
 
 Player.prototype.handleEvent = function(e) {
