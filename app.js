@@ -618,15 +618,19 @@ var handle = function(e) {
       acted = true;
       handled = true;
     }
-  } else if (Game.showingTutorial) {
+  } else if (Game.showingTutorial || Game.showingHighScores) {
     Game.showTitle();
     Game.showingTutorial = false;
+    Game.showingHighScores = false;
     acted = true;
     handled = true;
   } else if (Game.attempt.complete &&
              (new Date().getTime() - Game.completedAt) > 1000) {
     clearSavedGame();
-    Game.showTitle();
+    if (Game.newHighScoreIndex >= 0)
+      Game.showHighScores(Game.newHighScoreIndex);
+    else
+      Game.showTitle();
     acted = true;
     handled = true;
   } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting &&
@@ -664,6 +668,10 @@ var formatCastSpell = function(text, shrineType) {
         surroundText(upperCasedText[bestLetterIndex], shrine.color) +
         upperCasedText.substr(bestLetterIndex+1);
 }
+
+var formatSpell = function(castSpell, value) {
+  return formatCastSpell(checkWord(castSpell.tiles), castSpell.shrine) + ' (' + value + ')';
+};
 
 var drawButton = function(display, button, origin, xmax, ymax) {
   for (x = 0; x < button.length + 2; x++)
@@ -889,7 +897,10 @@ var Game = {
                       } },
             { text: 'Instructions',
               action: function() { Game.showTutorial.call(Game); } },
-          ];
+          ].concat(this.loadHighScores().length > 0 ?
+                   [ { text: 'High  Scores',
+                       action: function() { Game.showHighScores.call(Game, -1); } } ] :
+                   []);
 
       y = this.drawLogo(y) + 1 + spacing;
 
@@ -905,26 +916,74 @@ var Game = {
       }
     },
 
+    loadHighScores: function() {
+      var version = 0,
+          scoresKey = 'spellyHighScores',
+        data = (scoresKey in localStorage ?
+                JSON.parse(localStorage[scoresKey]) : undefined);
+      return data !== undefined && data[0] == version ? data[1] : [];
+    },
+
+    saveHighScores: function(scores) {
+      var version = 0,
+          scoresKey = 'spellyHighScores';
+      localStorage[scoresKey] = JSON.stringify([version, scores]);
+    },
+
+    showHighScores: function(index) {
+      var scores = this.loadHighScores(),
+          i,
+          y,
+          victoryColor,
+          depth,
+          total,
+          bestWord;
+      this.showingHighScores = true;
+      this.display.clear();
+      this.display.drawText(4, 0, 'Depth Tot Best Spell');
+      for (i = 0; i < scores.length; i++) {
+        y = 2 + 2 * i;
+        victoryColor = scores[i][0];
+        depth = scores[i][1] + '';
+        total = scores[i][2] + '';
+        bestWord = scores[i][3];
+        if (i == index) this.display.draw(0, y, '[', 'yellow');
+        this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
+        this.display.draw(5, y,
+                          victoryColor ? '@' : '\u2620',
+                          victoryColor || 'gray');
+        this.display.drawText(7 + (2 - depth.length), y, depth);
+        this.display.drawText(10 + (3 - total.length), y, total);
+        if (bestWord)
+          this.display.drawText(14, y, i == index ? bestWord.replace(' ', '') : bestWord);
+        if (i == index) this.display.draw(25, y, ']', 'yellow');
+      }
+    },
+
+    completeGame: function(attempt, won) {
+      if (won)
+        attempt.ascended = true;
+      attempt.complete = true;
+      Game.completedAt = new Date().getTime();
+      Game.save();
+      Game.newHighScoreIndex = maybeAddScore(attempt);
+    },
+
     showGameSummary: function(attempt) {
       var player = attempt.player,
           level = player.level,
-          bestSpellIndex = -1,
+          values = spellValues(attempt.spellsCast),
+          bestSpellIndex = values.indexOf(Math.max.apply(Math, values)),
           lines = [
               (attempt.ascended ? 'Won at' : player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth,
               'Spells cast: ' + attempt.spellsCast.length,
-              'Total value: ' +
-                  attempt.spellsCast.reduce(
-                      function(total, castSpell, i, spells) {
-                        var value = spellValue(castSpell.tiles, castSpell.shrine);
-                        if (bestSpellIndex < 0 ||
-                            value > spellValue(spells[bestSpellIndex].tiles, spells[bestSpellIndex].shrine))
-                          bestSpellIndex = i;
-                        return total + value;
-                      }, 0) ].concat(
+              'Total value: ' + values.reduce(function(a,b) { return a+b; }, 0),
+              ].concat(
                   bestSpellIndex >= 0 ? [
                       'Best spell: ' +
-                          formatCastSpell(checkWord(attempt.spellsCast[bestSpellIndex].tiles), attempt.spellsCast[bestSpellIndex].shrine) + ' (' +
-                          spellValue(attempt.spellsCast[bestSpellIndex].tiles, attempt.spellsCast[bestSpellIndex].shrine) + ')' ] : []);
+                          formatSpell(attempt.spellsCast[bestSpellIndex],
+                                      values[bestSpellIndex])
+                  ] : []);
       this.showTextScreen(lines);
     },
 
@@ -1342,6 +1401,36 @@ var spellValue = function(spell, shrineType) {
   return score;
 }
 
+var spellValues = function(spellsCast) {
+  return spellsCast.map(function(castSpell) {
+                          return spellValue(castSpell.tiles, castSpell.shrine);
+                        });
+};
+
+var maybeAddScore = function(attempt) {
+  var values = spellValues(attempt.spellsCast),
+      bestSpellIndex = values.indexOf(Math.max.apply(Math, values)),
+      score = [
+          attempt.ascended ? attempt.player.color : null,
+          attempt.player.level.depth,
+          values.reduce(function(a,b) { return a+b; }, 0),
+          bestSpellIndex >= 0 ?
+              formatSpell(attempt.spellsCast[bestSpellIndex],
+                          values[bestSpellIndex]) :
+              null,
+      ],
+      scores = Game.loadHighScores()
+          .concat(score[2] > 0 ? [score] : [])
+          .sort(function(a, b) {
+                  return a[0] && !b[0] ? -1 :
+                         b[0] && !a[0] ? 1 :
+                         b[2] - a[2];
+                })
+          .slice(0, 12);
+  Game.saveHighScores(scores);
+  return scores.indexOf(score);
+};
+
 Player.prototype.clickRackTile = function(index, map) {
   var result,
       button,
@@ -1444,9 +1533,7 @@ Player.prototype.clickRackTile = function(index, map) {
                         Game.attempt.message('Your health is restored.');
                     }
                     if (word == 'yendor') {
-                      Game.attempt.ascended = true;
-                      Game.attempt.complete = true;
-                      Game.completedAt = new Date().getTime();
+                      Game.completeGame(Game.attempt, true);
                       Game.showGameSummary(Game.attempt);
                     }
                   }
@@ -1748,10 +1835,8 @@ Foe.prototype.act = function() {
   if (nextLoc.x == playerLoc.x && nextLoc.y == playerLoc.y) {
     var damage = this.attack(Game.attempt.player);
     if (Game.attempt.player.getHealth() == 0) {
-      Game.attempt.complete = true;
-      Game.save();
+      Game.completeGame(Game.attempt);
       Game.engine.lock();
-      Game.completedAt = new Date().getTime();
       Game.showGameSummary(Game.attempt);
     }
     else if (damage > 0)
