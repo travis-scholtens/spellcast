@@ -182,6 +182,7 @@ levels_per_bingo = 7
 def experience_after_level():
   total = 0
   for l in range(1, 31):
+    old_total = total
     total += (enemies_per_level[l] *
               depth_avg_value[l if l in depth_avg_value else max(depth_avg_value.keys())])
     if (l >= levels_per_bingo):
@@ -241,14 +242,9 @@ def stats_at_level():
 
 with open('experience.js', 'w') as f:
   stats = list(stats_at_level())
-  last_e = max_de = 0
   from math import floor
   f.write('var experienceLevelDefinitions = [\n')
   for l, e in [(0, 0)] + sorted(dict(experience_after_level()).items()):
-    floor_e = floor(e)
-    max_de = max(max_de, floor_e - last_e)
-    last_e = floor_e
     damage, speed = stats[l]
     f.write('  {{ expThreshold: {}, meanDamage: {}, speed: {} }},\n'.format(floor(e), round(damage, 1), floor(speed)))
-  f.write('];\n')
-  f.write('var furtherExperienceThreshold = {};\n'.format(floor(max_de)))
+  f.write(']\n')
