@@ -1061,7 +1061,9 @@ var Game = {
       drawMeter(this.display, display.width - 1, meterTop, meterHeight,
                 experienceLevelDefinitions[expLevelIndex-1].expThreshold,
                 experienceLevelDefinitions[expLevelIndex].expThreshold,
-                attempt.player.experience,
+                expLevelIndex < experienceLevelDefinitions.length - 1 ?
+                    attempt.player.experience :
+                    experienceLevelDefinitions[expLevelIndex].expThreshold,
                 levelIcon.glyph, levelIcon.color);
       this.drawRackTiles(level.map[attempt.player._x + ',' + attempt.player._y].corpse);
       this.display.lastDrawnAt = this.scheduler.getTime();
