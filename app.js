@@ -575,6 +575,12 @@ var drawMeter = function(display, x, y, dy, rangeLow, rangeHigh, value, glyph, c
   display.draw(x, y, glyph, color);
 }
 
+var drawScore = function(display, xmax, y, score) {
+  var text = score + '',
+      x = Math.floor((xmax - text.length)/2);
+  display.drawText(x, y, text);
+}
+
 var wrapMessages = function(messages, width) {
   var i,
       prefix = ['>'],
@@ -997,6 +1003,7 @@ var Game = {
       var levelText = 'L: ' +
           experienceLevelDefinitions.indexOf(levelFor(attempt.player.experience));
       this.display.drawText(display.width - levelText.length, 0, levelText);
+      drawScore(this.display, display.width, 0, attempt.player.experience);
       for (var dx = 1; dx < display.width - 1; dx++)
         for (var dy = 1; dy < display.height - 3; dy++) {
           var x = attempt.player.getX() - display.width/2 + dx,
