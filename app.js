@@ -940,7 +940,7 @@ var Game = {
           bestWord;
       this.showingHighScores = true;
       this.display.clear();
-      this.display.drawText(4, 0, 'Depth Tot Best Spell');
+      this.display.drawText(3, 0, 'Depth  Tot Best Spell');
       for (i = 0; i < scores.length; i++) {
         y = 2 + 2 * i;
         victoryColor = scores[i][0];
@@ -949,10 +949,10 @@ var Game = {
         bestWord = scores[i][3];
         if (i == index) this.display.draw(0, y, '[', 'yellow');
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
-        this.display.draw(5, y,
+        this.display.draw(4, y,
                           victoryColor ? '@' : '\u2620',
                           victoryColor || 'gray');
-        this.display.drawText(7 + (2 - depth.length), y, depth);
+        this.display.drawText(6 + (2 - depth.length), y, depth);
         this.display.drawText(10 + (3 - total.length), y, total);
         if (bestWord)
           this.display.drawText(14, y, i == index ? bestWord.replace(' ', '') : bestWord);
