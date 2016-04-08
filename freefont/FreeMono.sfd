@@ -18,7 +18,7 @@ OS2Version: 3
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1203284335
-ModificationTime: 1447118299
+ModificationTime: 1460083453
 PfmFamily: 49
 TTFWeight: 400
 TTFWidth: 5
@@ -564,7 +564,7 @@ Grid
 EndSplineSet
 TeXData: 1 0 0 629146 314573 209715 437256 1048576 209715 783286 444596 497025 792723 393216 433062 380633 303038 157286 324010 404750 52429 2506097 1059062 262144
 AnchorClass2: "ring-arabic"  "'mark' marks in Arabic subtable" "far-right-dot"  "'mark' marks generic high-1" "belowmk"  "'mkmk' mark-to-mark generic-low" "abovemk"  "'mkmk' mark-to-mark generic-high" "dev-abv-mark"  "'mkmk' mark-to-mark in Devanagari-1" "viet-hook"  "'mkmk' mark-to-mark in Latin-for Viet" "viet-grave"  "'mkmk' mark-to-mark in Latin-for Viet" "viet-acute"  "'mkmk' mark-to-mark in Latin-for Viet" "dev-above"  "'abvm' above-base marks in Devanagari-1" "dev-rakaar"  "'blwm' rakaar in Devanagari" "dev-below"  "'blwm' below-base mark in Devanagari" "dev-nukta"  "'blwm' nukta in Devanagari" "abovecyr"  "'mark' marks in Cyrillic subtable" "above_arabic"  "'mark' marks in Arabic subtable" "below_arabic"  "'mark' marks in Arabic subtable" "arab_diacritic"  "'mkmk' mark-to-mark in Arabic subtable" "abovegk"  "'mark' marks in Greek subtable" "below"  "'mark' marks generic low-1" "above"  "'mark' marks generic high-1" 
-BeginChars: 67329 302
+BeginChars: 67329 303
 
 StartChar: space
 Encoding: 32 32 0
@@ -1497,38 +1497,38 @@ Flags: HMWO
 LayerCount: 2
 Fore
 SplineSet
-418.91 457.26 m 1
- 469.54 457.26 l 1
- 414.64 227.66 l 1
- 409.76 208.8 407.32 194.04 407.32 186.66 c 0
- 407.32 166.98 421.35 150.58 437.82 150.58 c 0
- 489.67 150.58 540.3 243.24 540.3 339.18 c 0
- 540.3 476.12 442.09 590.92 325.58 590.92 c 0
- 196.87 590.92 85.8496 442.5 85.8496 270.3 c 0
- 85.8496 113.68 185.28 -6.86035 314.6 -6.86035 c 0
- 347.54 -6.86035 382.31 0.519531 432.33 19.3799 c 1
- 449.41 -35.5596 l 1
- 405.49 -57.7002 356.69 -70 311.55 -70 c 0
- 157.22 -70 34 75.96 34 258 c 0
- 34 365.42 70.5996 475.3 130.38 548.28 c 0
- 184.06 613.88 260.92 654.06 333.51 654.06 c 0
- 475.64 654.06 593.37 515.48 593.37 349.02 c 0
- 593.37 285.06 574.46 218.64 540.91 166.16 c 0
- 509.8 116.96 472.59 93.1797 427.45 93.1797 c 0
- 389.02 93.1797 365.84 114.5 360.35 156.32 c 1
- 332.29 115.32 306.06 97.2803 273.73 97.2803 c 0
- 217 97.2803 174.3 162.06 174.3 247.34 c 0
- 174.3 366.24 249.33 474.48 331.07 474.48 c 0
- 364.62 474.48 390.24 449.88 405.49 403.14 c 1
- 418.91 457.26 l 1
-327.41 422 m 0
- 276.17 422 229.2 338.36 229.2 246.52 c 0
- 229.2 192.4 256.04 149.76 289.59 149.76 c 0
- 312.16 149.76 334.73 169.44 351.81 203.06 c 0
- 367.06 233.4 383.53 302.28 384.75 343.28 c 0
- 386.58 387.56 361.57 422 327.41 422 c 0
+418.91 457.26 m 5
+ 469.54 457.26 l 5
+ 414.64 227.66 l 5
+ 409.76 208.8 407.32 194.04 407.32 186.66 c 4
+ 407.32 166.98 421.35 150.58 437.82 150.58 c 4
+ 489.67 150.58 540.3 243.24 540.3 339.18 c 4
+ 540.3 476.12 442.09 590.92 325.58 590.92 c 4
+ 196.87 590.92 85.8496 442.5 85.8496 270.3 c 4
+ 85.8496 113.68 185.28 -6.86035 314.6 -6.86035 c 4
+ 347.54 -6.86035 382.31 0.519531 432.33 19.3799 c 5
+ 449.41 -35.5596 l 5
+ 405.49 -57.7002 356.69 -70 311.55 -70 c 4
+ 157.22 -70 34 75.96 34 258 c 4
+ 34 365.42 70.5996 475.3 130.38 548.28 c 4
+ 184.06 613.88 260.92 654.06 333.51 654.06 c 4
+ 475.64 654.06 593.37 515.48 593.37 349.02 c 4
+ 593.37 285.06 574.46 218.64 540.91 166.16 c 4
+ 509.8 116.96 472.59 93.1797 427.45 93.1797 c 4
+ 389.02 93.1797 365.84 114.5 360.35 156.32 c 5
+ 332.29 115.32 306.06 97.2803 273.73 97.2803 c 4
+ 217 97.2803 174.3 162.06 174.3 247.34 c 4
+ 174.3 366.24 249.33 474.48 331.07 474.48 c 4
+ 364.62 474.48 390.24 449.88 405.49 403.14 c 5
+ 418.91 457.26 l 5
+327.41 422 m 4
+ 276.17 422 229.2 338.36 229.2 246.52 c 4
+ 229.2 192.4 256.04 149.76 289.59 149.76 c 4
+ 312.16 149.76 334.73 169.44 351.81 203.06 c 4
+ 367.06 233.4 383.53 302.28 384.75 343.28 c 4
+ 386.58 387.56 361.57 422 327.41 422 c 4
 EndSplineSet
-Validated: 527393
+Validated: 3105
 EndChar
 
 StartChar: A
@@ -1569,7 +1569,7 @@ SplineSet
  178 229 l 1
  413 229 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.a
 Substitution2: "'sups' superscript-latin" Asup
 EndChar
@@ -1609,7 +1609,7 @@ SplineSet
  373 41 l 2
  444 41 500 91 500 153 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.b
 Substitution2: "'sups' superscript-latin" Bsup
 EndChar
@@ -1643,7 +1643,7 @@ SplineSet
  186 -16 63 107 63 242 c 2
  63 325 l 2
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.c
 Substitution2: "'sups' superscript-latin" sup.C
 EndChar
@@ -1677,7 +1677,7 @@ SplineSet
  391 41 479 139 479 245 c 2
  479 318 l 2
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.d
 Substitution2: "'sups' superscript-latin" Dsup
 EndChar
@@ -1722,7 +1722,7 @@ SplineSet
  310 272 l 1
  165 272 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.e
 Substitution2: "'sups' superscript-latin" Esup
 EndChar
@@ -1765,7 +1765,7 @@ SplineSet
  310 272 l 1
  165 272 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.f
 Substitution2: "'sups' superscript-latin" sup.F
 EndChar
@@ -1805,7 +1805,7 @@ SplineSet
  487 418 481 426 480 443 c 0
  476 494 404 535 315 535 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.g
 Substitution2: "'sups' superscript-latin" Gsup
 EndChar
@@ -1856,7 +1856,7 @@ SplineSet
  437 41 l 1
  437 272 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.h
 Substitution2: "'sups' superscript-latin" Hsup
 EndChar
@@ -1887,7 +1887,7 @@ SplineSet
  487 529 478 522 459 522 c 2
  320 522 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.i
 Substitution2: "'sups' superscript-latin" Isup
 EndChar
@@ -1919,7 +1919,7 @@ SplineSet
  583 529 574 522 556 522 c 2
  460 522 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.j
 Substitution2: "'sups' superscript-latin" Jsup
 EndChar
@@ -1967,7 +1967,7 @@ SplineSet
  385 203 341 263 246 294 c 1
  165 221 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.k
 Substitution2: "'sups' superscript-latin" Ksup
 EndChar
@@ -2000,7 +2000,7 @@ SplineSet
  350 529 341 522 323 522 c 2
  227 522 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.l
 Substitution2: "'sups' superscript-latin" Lsup
 EndChar
@@ -2048,7 +2048,7 @@ SplineSet
  483 522 l 1
  326 169 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.m
 Substitution2: "'sups' superscript-latin" Msup
 EndChar
@@ -2088,7 +2088,7 @@ SplineSet
  501 522 l 1
  501 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.n
 Substitution2: "'sups' superscript-latin" Nsup
 EndChar
@@ -2150,7 +2150,7 @@ SplineSet
  165 522 l 1
  165 272 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.p
 Substitution2: "'sups' superscript-latin" Psup
 EndChar
@@ -2186,7 +2186,7 @@ SplineSet
  413 25 508 140 508 277 c 0
  508 421 416 535 300 535 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.q
 Substitution2: "'sups' superscript-latin" sup.Q
 EndChar
@@ -2229,7 +2229,7 @@ SplineSet
  165 522 l 1
  165 292 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.r
 Substitution2: "'sups' superscript-latin" Rsup
 EndChar
@@ -2266,7 +2266,7 @@ SplineSet
  136 76 210 25 301 25 c 0
  394 25 464 79 464 153 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.s
 Substitution2: "'sups' superscript-latin" sup.S
 EndChar
@@ -2301,7 +2301,7 @@ SplineSet
  321 522 l 1
  321 41 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.t
 Substitution2: "'sups' superscript-latin" Tsup
 EndChar
@@ -2338,7 +2338,7 @@ SplineSet
  560 529 551 522 533 522 c 2
  499 522 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.u
 Substitution2: "'sups' superscript-latin" Usup
 EndChar
@@ -2373,7 +2373,7 @@ SplineSet
  324 0 l 1
  267 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.v
 Substitution2: "'sups' superscript-latin" Vsup
 EndChar
@@ -2413,7 +2413,7 @@ SplineSet
  185 0 l 1
  122 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.w
 Substitution2: "'sups' superscript-latin" Wsup
 EndChar
@@ -2464,7 +2464,7 @@ SplineSet
  504 522 l 1
  325 288 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.x
 Substitution2: "'sups' superscript-latin" sup.X
 EndChar
@@ -2506,7 +2506,7 @@ SplineSet
  498 522 l 1
  322 254 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.y
 Substitution2: "'sups' superscript-latin" sup.Y
 EndChar
@@ -2539,7 +2539,7 @@ SplineSet
  490 209 497 200 497 182 c 2
  497 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'c2sc' caps to small caps in Latin-1" sc.z
 Substitution2: "'sups' superscript-latin" sup.Z
 EndChar
@@ -2696,7 +2696,7 @@ SplineSet
  113 59 158 25 227 25 c 0
  298 25 352 49 419 112 c 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.a
 Substitution2: "'subs' subscript-latin" asub
 Substitution2: "'sups' superscript-latin" asup
@@ -2732,7 +2732,7 @@ SplineSet
  419 25 500 107 500 205 c 0
  500 309 422 390 322 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.b
 Substitution2: "'subs' subscript-latin" sub.b
 Substitution2: "'sups' superscript-latin" bsup
@@ -2764,7 +2764,7 @@ SplineSet
  506 105 509 107 516 107 c 0
  526 107 535 98 535 88 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.c
 Substitution2: "'subs' subscript-latin" sub.c
 Substitution2: "'sups' superscript-latin" csuper
@@ -2800,7 +2800,7 @@ SplineSet
  381 25 461 106 461 206 c 0
  461 310 383 390 282 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.d
 Substitution2: "'subs' subscript-latin" sub.d
 Substitution2: "'sups' superscript-latin" dsup
@@ -2829,7 +2829,7 @@ SplineSet
  462 331 388 390 291 390 c 0
  194 390 122 332 104 240 c 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.e
 Substitution2: "'subs' subscript-latin" esub
 Substitution2: "'sups' superscript-latin" esup
@@ -2870,7 +2870,7 @@ SplineSet
  535 588 541 581 541 571 c 0
  541 559 532 551 520 551 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.f
 Substitution2: "'subs' subscript-latin" sub.f
 Substitution2: "'sups' superscript-latin" fsup
@@ -2909,7 +2909,7 @@ SplineSet
  365 51 440 126 440 219 c 0
  440 316 367 390 272 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.g
 Substitution2: "'subs' subscript-latin" sub.g
 Substitution2: "'sups' superscript-latin" gsup
@@ -2953,7 +2953,7 @@ SplineSet
  437 41 l 1
  437 288 l 2
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.h
 Substitution2: "'subs' subscript-latin" hsub
 Substitution2: "'sups' superscript-latin" hsuper
@@ -2987,7 +2987,7 @@ SplineSet
  259 624 l 1
  318 624 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "subst. i,j with dotless form-1" dotlessi
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.i
 Substitution2: "'smcp' lowercase to small caps in Latin for Turkish-1" sc.i_dot
@@ -3023,7 +3023,7 @@ SplineSet
  325 624 l 1
  384 624 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "subst. i,j with dotless form-1" dotlessj
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.j
 Substitution2: "'subs' subscript-latin" sub.j
@@ -3070,7 +3070,7 @@ SplineSet
  231 219 l 1
  185 180 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.k
 Substitution2: "'subs' subscript-latin" ksub
 Substitution2: "'sups' superscript-latin" ksup
@@ -3099,7 +3099,7 @@ SplineSet
  135 597 144 604 162 604 c 2
  320 604 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.l
 Substitution2: "'subs' subscript-latin" lsub
 Substitution2: "'sups' superscript-latin" lsuper
@@ -3149,7 +3149,7 @@ SplineSet
  11 410 20 417 38 417 c 2
  112 417 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.m
 Substitution2: "'subs' subscript-latin" msub
 Substitution2: "'sups' superscript-latin" msup
@@ -3192,7 +3192,7 @@ SplineSet
  439 288 l 2
  439 344 394 390 319 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.n
 Substitution2: "'subs' subscript-latin" nsub
 Substitution2: "'sups' superscript-latin" nsuper
@@ -3258,7 +3258,7 @@ SplineSet
  420 51 500 126 500 219 c 0
  500 316 423 390 322 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.p
 Substitution2: "'subs' subscript-latin" psub
 Substitution2: "'sups' superscript-latin" psup
@@ -3298,7 +3298,7 @@ SplineSet
  381 51 461 126 461 219 c 0
  461 316 383 390 282 390 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.q
 Substitution2: "'subs' subscript-latin" sub.q
 Substitution2: "'sups' superscript-latin" sup.q
@@ -3333,7 +3333,7 @@ SplineSet
  501 427 541 378 541 365 c 0
  541 353 532 344 520 344 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.r
 Substitution2: "'subs' subscript-latin" rsub
 Substitution2: "'sups' superscript-latin" rsuper
@@ -3372,7 +3372,7 @@ SplineSet
  144 62 213 25 298 25 c 0
  386 25 452 64 452 117 c 0
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.s
 Substitution2: "'subs' subscript-latin" ssub
 Substitution2: "'sups' superscript-latin" ssuper
@@ -3408,7 +3408,7 @@ SplineSet
  180 563 186 555 186 536 c 2
  186 417 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.t
 Substitution2: "'subs' subscript-latin" tsub
 Substitution2: "'sups' superscript-latin" tsup
@@ -3445,7 +3445,7 @@ SplineSet
  541 7 532 0 514 0 c 2
  439 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.u
 Substitution2: "'subs' subscript-latin" usub
 Substitution2: "'sups' superscript-latin" usup
@@ -3481,7 +3481,7 @@ SplineSet
  502 376 l 1
  336 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.v
 Substitution2: "'subs' subscript-latin" vsub
 Substitution2: "'sups' superscript-latin" vsup
@@ -3522,7 +3522,7 @@ SplineSet
  524 376 l 1
  441 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.w
 Substitution2: "'subs' subscript-latin" sub.w
 Substitution2: "'sups' superscript-latin" wsuper
@@ -3574,7 +3574,7 @@ SplineSet
  492 376 l 1
  329 219 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.x
 Substitution2: "'subs' subscript-latin" xsub
 Substitution2: "'sups' superscript-latin" xsuper
@@ -3617,7 +3617,7 @@ SplineSet
  211 -145 l 1
  282 0 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.y
 Substitution2: "'subs' subscript-latin" sub.y
 Substitution2: "'sups' superscript-latin" ysuper
@@ -3649,7 +3649,7 @@ SplineSet
  124 417 l 1
  474 417 l 1
 EndSplineSet
-Validated: 1051649
+Validated: 3073
 Substitution2: "'smcp' lowercase to small caps in Latin-1" sc.z
 Substitution2: "'subs' subscript-latin" sub.z
 Substitution2: "'sups' superscript-latin" zsup
@@ -8276,7 +8276,7 @@ EndChar
 StartChar: uni259A
 Encoding: 9626 9626 261
 Width: 600
-Flags: HMW
+Flags: HMWO
 LayerCount: 2
 Fore
 SplineSet
@@ -8937,7 +8937,7 @@ EndChar
 StartChar: uni2610
 Encoding: 9744 9744 287
 Width: 600
-Flags: HMW
+Flags: HMWO
 LayerCount: 2
 Fore
 Refer: 268 9633 N 1 0 0 1 0 0 0
@@ -9409,6 +9409,75 @@ SplineSet
  446 178.078 434.95 167.792 422 157 c 2
 EndSplineSet
 Validated: 3073
+EndChar
+
+StartChar: uni2620
+Encoding: 9760 9760 302
+Width: 600
+Flags: HWO
+LayerCount: 2
+Fore
+SplineSet
+360.771 500.12 m 1
+ 386.085 500.12 l 1
+ 358.635 385.319 l 1
+ 356.195 375.89 354.976 368.51 354.976 364.819 c 0
+ 354.976 354.979 361.99 346.78 370.226 346.78 c 0
+ 396.15 346.78 421.465 393.11 421.465 441.08 c 0
+ 421.465 509.55 372.36 566.95 314.105 566.95 c 0
+ 249.75 566.95 194.24 492.739 194.24 406.64 c 0
+ 194.24 328.33 243.955 268.06 308.615 268.06 c 0
+ 325.085 268.06 342.47 271.749 367.48 281.18 c 1
+ 376.021 253.71 l 1
+ 354.061 242.64 329.66 236.489 307.09 236.489 c 0
+ 229.925 236.489 168.315 309.47 168.315 400.489 c 0
+ 168.315 454.2 186.615 509.14 216.505 545.63 c 0
+ 243.345 578.43 281.775 598.521 318.07 598.521 c 0
+ 389.135 598.521 448 529.229 448 446 c 0
+ 448 414.021 438.545 380.81 421.771 354.569 c 0
+ 406.215 329.97 387.61 318.079 365.04 318.079 c 0
+ 345.825 318.079 334.235 328.739 331.49 349.649 c 1
+ 317.46 329.149 304.345 320.13 288.18 320.13 c 0
+ 259.815 320.13 238.465 352.521 238.465 395.159 c 0
+ 238.465 454.61 275.98 508.729 316.851 508.729 c 0
+ 333.625 508.729 346.436 496.43 354.061 473.06 c 1
+ 360.771 500.12 l 1
+315.021 482.489 m 0
+ 289.4 482.489 265.915 440.67 265.915 394.75 c 0
+ 265.915 367.69 279.335 346.37 296.11 346.37 c 0
+ 307.396 346.37 318.68 356.21 327.22 373.021 c 0
+ 334.845 388.19 343.08 422.63 343.69 443.13 c 0
+ 344.605 465.271 332.101 482.489 315.021 482.489 c 0
+302 130 m 1
+ 323 142 374 165 423 185 c 1
+ 432 195 474 238 491 238 c 0
+ 505 238 509 229 509 214 c 0
+ 509 208 508 198 506 185 c 1
+ 519 169 526 157 526 149 c 0
+ 526 135 518 129 504 129 c 0
+ 494 129 471 143 459 151 c 1
+ 432 146 392 130 341 105 c 1
+ 377 84 400 67 444 41 c 1
+ 499 35 526 21 526 0 c 0
+ 526 -14 511 -23 482 -28 c 1
+ 468 -44 457 -53 448 -53 c 0
+ 432 -53 421 -23 411 2 c 1
+ 369 37 332 63 298 81 c 1
+ 257 58 219 30 184 -2 c 1
+ 179 -36 169 -53 153 -53 c 0
+ 143 -53 132 -44 119 -24 c 1
+ 88 -24 73 -16 73 1 c 0
+ 73 35 124 39 162 44 c 1
+ 189 64 222 84 259 105 c 1
+ 209 130 168 145 136 151 c 1
+ 127 143 112 131 98 131 c 0
+ 84 131 74 137 74 150 c 0
+ 74 156 81 167 94 185 c 1
+ 90 197 89 207 89 213 c 0
+ 89 229 95 239 110 239 c 0
+ 131 239 161 205 177 185 c 1
+ 212 173 253 154 302 130 c 1
+EndSplineSet
 EndChar
 EndChars
 EndSplineFont
