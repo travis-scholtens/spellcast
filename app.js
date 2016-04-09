@@ -1320,8 +1320,11 @@ var dealDamage = function(attempt, loc, foe) {
     foes.splice(foes.indexOf(foe), 1);
     attempt.message('You kill the ' + name + '!');
   }
-  else if (damage > 0)
+  else if (damage > 0) {
     attempt.message('You hit the ' + name + '! %c{red}-' + damage);
+    if (foe.kind === shapeshifter)
+      foe.hurtSinceShift = true;
+  }
   else
     attempt.message('You miss the ' + name + '.');
 }
@@ -1840,11 +1843,13 @@ Foe.prototype.act = function() {
     return;
 
   if (this.kind === shapeshifter &&
+      'hurtSinceShift' in this &&
       this.health < levelFor(Game.attempt.player.experience).meanDamage) {
     var kind = this.chooseShiftedKind();
     if (this.shiftedKind !== kind) {
       Game.attempt.message('The shapeshifter changes form, from ' + this.shiftedKind.name +
           ' to ' + kind.name + ', regenerating its health! %c{green}+' + (kind.health - this.health));
+      delete this.hurtSinceShift;
       this.shiftedKind = kind;
       this.health = this.shiftedKind.health;
     }
