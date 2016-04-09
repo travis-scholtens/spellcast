@@ -640,8 +640,7 @@ var handle = function(e) {
       Game.showTitle();
     acted = true;
     handled = true;
-  } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting &&
-             (!e.touches || e.touches.length > 0)) {
+  } else if (!Game.attempt.complete > 0 && Game.attempt.player.acting) {
     acted = Game.attempt.player.handleEvent(e);
     handled = true;
   }
@@ -1665,11 +1664,28 @@ var getTileClickCoords = function(clientLoc, player, display) {
   return candidates.length ? candidates[0][0] : undefined;
 }
 
+var useAnyTouches = function(raw) {
+  var e = { clientX: raw.clientX,
+            clientY: raw.clientY,
+            touches: [] },
+      i;
+  if ('touches' in raw)
+    for (i = 0; i < raw.touches.length; i++)
+      e.touches.push(raw.touches.item(i));
+  if ('changedTouches' in raw)
+    for (i = 0; i < raw.changedTouches.length; i++)
+      e.touches.push(raw.changedTouches.item(i));
+  if (e.touches.length == 0)
+    e.touches.push({ clientX: raw.clientX, clientY: raw.clientY });
+  raw.preventDefault();
+  return e;
+}
+
 var handleTitleClick = function(e) {
   var coords, i, j;
 
   if (e.type == 'keydown') return false;
-  coords = Game.display.eventToPosition(e);
+  coords = Game.display.eventToPosition(useAnyTouches(e));
   if (coords[0] >= 0 && coords[1] >= 0)
     for (i = 0; i < Game.titleButtons.length; i++)
       for (j = 0; j < Game.titleButtons[i].locs.length; j++)
@@ -1684,7 +1700,7 @@ Player.prototype.handleEvent = function(e) {
   if (e.type == 'keydown')
     return this.keyPress(e.keyCode, this.level);
   else {
-    var coords = Game.display.eventToPosition(e);
+    var coords = Game.display.eventToPosition(useAnyTouches(e));
     if (coords[0] >= 0 && coords[1] >= 0)
       return this.click({x: coords[0], y: coords[1]},
                         getTileClickCoords(clientCoords(e), this, Game.display));
