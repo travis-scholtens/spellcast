@@ -899,6 +899,7 @@ var Game = {
                       } :
                       function() {
                         Game.display.clear();
+                        clearSavedGame();
                         Game.newAttempt();
                       } },
             { text: 'Instructions',
