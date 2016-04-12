@@ -938,7 +938,7 @@ var Game = {
     },
 
     showHighScores: function(index) {
-      var scores = this.loadHighScores(),
+      var scores = this.loadHighScores().slice(0, 8),
           i,
           y,
           victoryColor,
@@ -947,23 +947,19 @@ var Game = {
           bestWord;
       this.showingHighScores = true;
       this.display.clear();
-      this.display.drawText(3, 0, 'Depth  Tot Best Spell');
       for (i = 0; i < scores.length; i++) {
-        y = 2 + 2 * i;
+        y = 1 + 3 * i;
         victoryColor = scores[i][0];
-        depth = scores[i][1] + '';
         total = scores[i][2] + '';
         bestWord = scores[i][3];
-        if (i == index) this.display.draw(0, y, '[', 'yellow');
+        if (i == index) this.display.draw(0, y, '*', 'yellow');
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
         this.display.draw(4, y,
                           victoryColor ? '@' : '\u2620',
                           victoryColor || 'gray');
-        this.display.drawText(6 + (2 - depth.length), y, depth);
-        this.display.drawText(10 + (3 - total.length), y, total);
+        this.display.drawText(7 + (3 - total.length), y, total);
         if (bestWord)
-          this.display.drawText(14, y, i == index ? bestWord.replace(' ', '') : bestWord);
-        if (i == index) this.display.draw(25, y, ']', 'yellow');
+          this.display.drawText(4, y+1, bestWord);
       }
     },
 
