@@ -617,9 +617,13 @@ var clearSavedGame = function() {
 }
 
 var handle = function(e) {
-  var handled = false,
+  var t = new Date().getTime(),
+      waiting = false,
+      handled = false,
       acted = false;
-  if (Game.titleButtons) {
+  if ((t - this.lastEvent) < 100)
+    waiting = true;
+  else if (Game.titleButtons) {
     if (handleTitleClick(e)) {
       delete Game.titleButtons;
       acted = true;
@@ -632,7 +636,7 @@ var handle = function(e) {
     acted = true;
     handled = true;
   } else if (Game.attempt.complete &&
-             (new Date().getTime() - Game.completedAt) > 1000) {
+             (t - Game.completedAt) > 1000) {
     clearSavedGame();
     if (Game.newHighScoreIndex >= 0)
       Game.showHighScores(Game.newHighScoreIndex);
@@ -644,6 +648,8 @@ var handle = function(e) {
     acted = Game.attempt.player.handleEvent(e);
     handled = true;
   }
+  if (!waiting)
+    this.lastEvent = t;
   if (acted) {
     this.acting = false;
     Game.engine.unlock();
@@ -720,6 +726,7 @@ var Game = {
         if (canvas.clientWidth > canvas.clientHeight)
           canvas.style.width = (0.625 * canvas.height) + 'px';
 
+        this.lastEvent = 0;
         window.addEventListener("keydown", handle);
         window.addEventListener("mouseup", handle);
         window.addEventListener("touchend", handle);
