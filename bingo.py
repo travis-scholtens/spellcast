@@ -229,8 +229,8 @@ def stats_at_level():
   damage_per_player_dealt_hit = 5
   player_speed = 75
 
-  # player has 50 health, refilled each experience level, so try to sap 40 of it each level
-  upgrade = next_upgrade(40)
+  # player has 50 health, refilled each experience level, so try to sap 75 of it each level
+  upgrade = next_upgrade(75)
   for l in range(1, 32):
     enemy_health = depth_avg_health[l if l in depth_avg_health else max(depth_avg_health.keys())]
     damage_to_player_rate = enemies_per_level[l] * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
