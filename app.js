@@ -1253,13 +1253,16 @@ takeCorpse = function(map, x, y, attempt) {
   return false;
 }
 
-dropCorpse = function(map, x, y, corpse) {
+dropCorpse = function(map, x, y, excludeLocs, corpse) {
   var q = [[x,y]];
   var seen = {};
   while (q.length > 0) {
     var u = q.shift();
     var key = u[0] + ',' + u[1];
-    if (map[key].passable && map[key].corpse == null) {
+    if (map[key].passable && map[key].corpse == null &&
+        excludeLocs.every(function(loc) {
+                            return loc.x != u[0] || loc.y != u[1];
+                          })) {
       map[key].corpse = corpse;
       return;
     }
@@ -1319,7 +1322,9 @@ var dealDamage = function(attempt, loc, foe) {
       name = Game.glyphKind[foe.effectiveKind().glyph].name;
   if (foe.health == 0) {
     map[loc.x + ',' + loc.y].contents = null;
-    dropCorpse(map, loc.x, loc.y, new Corpse(foe.kind.glyph, 0));
+    dropCorpse(map, loc.x, loc.y,
+               [level.up, level.down, {x: player._x, y: player._y}],
+               new Corpse(foe.kind.glyph, 0));
     Game.scheduler.remove(foe);
     foes.splice(foes.indexOf(foe), 1);
     attempt.message('You kill the ' + name + '!');
@@ -1514,7 +1519,9 @@ Player.prototype.clickRackTile = function(index, map) {
                   if (tiles[0].corpse.rotted())
                     Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing.');
                   else {
-                    dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y, tiles[0].corpse);
+                    dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y,
+                               [Game.attempt.player.level.up, Game.attempt.player.level.down],
+                               tiles[0].corpse);
                     if (tiles[0].corpse.rotting())
                       Game.attempt.message('You drop the ' + name + ' corpse, which begins to rot.');
                     else
