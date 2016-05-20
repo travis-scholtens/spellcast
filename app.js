@@ -384,6 +384,12 @@ var _generateMap = function(depth, rngState, shrineDist) {
     level.playerStart = { x: upCenter[0], y: upCenter[1] };
   level.down = { x: downCenter[0], y: downCenter[1] };
 
+  [level.up, level.down].forEach(function(loc) {
+    var i = freeCells.indexOf(loc.x + ',' + loc.y);
+    if (i >= 0)
+      freeCells.splice(i, 1);
+  });
+
   var shrineCenter = shrineRoom !== null ? rooms[shrineRoom].getCenter() : null;
   level.shrine = shrineRoom !== null &&
                      shrines.map(function(_,i) { return shrineDist[i]; })
