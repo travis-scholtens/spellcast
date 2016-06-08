@@ -1,3 +1,5 @@
+from sys import argv
+
 values = {
   '.': 0,
   'a': 1,
@@ -220,11 +222,11 @@ def next_upgrade(target_damage_rate):
     yield upgrade_damage
     yield upgrade_speed
 
-def stats_at_level():
-  # these are constant
-  damage_per_enemy_dealt_hit = 3
-  enemy_speed = 100
+# these are constant
+damage_per_enemy_dealt_hit = 3
+enemy_speed = 100
 
+def stats_at_level():
   # these will get buffed by level gains
   damage_per_player_dealt_hit = 5
   player_speed = 75
@@ -239,6 +241,29 @@ def stats_at_level():
     yield damage_per_player_dealt_hit, player_speed
     # upgrade to the next level
     damage_per_player_dealt_hit, player_speed = next(upgrade)(damage_to_player_rate, damage_per_player_dealt_hit, player_speed)
+
+def lifespan_by_depth_and_level():
+  lifespans = []
+  stats = list(stats_at_level())
+  for d in range(1, 40):
+    by_level = []
+    for l in range(len(stats)):
+      damage_per_player_dealt_hit, player_speed = stats[l]
+      damage_to_player_rate = enemies_per_level[d] * depth_avg_health[d if d in depth_avg_health else max(depth_avg_health.keys())] * enemy_speed * damage_per_enemy_dealt_hit
+      damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
+      by_level.append(damage_to_player/50)
+    lifespans.append(by_level)
+  return lifespans
+
+if len(argv) > 1 and argv[1] == '--chart':
+  import matplotlib.pyplot as p
+  lifespans = lifespan_by_depth_and_level()
+  ps = []
+  for i in range(len(lifespans[0])-1):
+    ps.append(p.plot([d+1 for d in range(len(lifespans))],
+                     [lifespans[d][i] for d in range(len(lifespans))])[0])
+  p.legend(ps, [str(i+1) for i in range(len(lifespans[0])-1)])
+  p.show()
 
 with open('experience.js', 'w') as f:
   stats = list(stats_at_level())
