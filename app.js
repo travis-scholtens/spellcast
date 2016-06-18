@@ -957,7 +957,8 @@ var Game = {
           victoryColor,
           depth,
           total,
-          bestWord;
+          bestWord,
+          w = this.display.getOptions().width;
       this.showingHighScores = true;
       this.display.clear();
       for (i = 0; i < scores.length; i++) {
@@ -965,7 +966,12 @@ var Game = {
         victoryColor = scores[i][0];
         total = scores[i][2] + '';
         bestWord = scores[i][3];
-        if (i == index) this.display.draw(0, y, '*', 'yellow');
+        if (i == index) {
+          this.display.draw(0, y, '\u2571', 'yellow');
+          this.display.draw(0, y+1, '\u2572', 'yellow');
+          this.display.draw(w-1, y, '\u2572', 'yellow');
+          this.display.draw(w-1, y+1, '\u2571', 'yellow');
+        }
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
         this.display.draw(4, y,
                           victoryColor ? '@' : '\u2620',
