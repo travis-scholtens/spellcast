@@ -958,6 +958,7 @@ var Game = {
           depth,
           total,
           bestWord,
+          rebalanceVersion,
           w = this.display.getOptions().width;
       this.showingHighScores = true;
       this.display.clear();
@@ -967,12 +968,15 @@ var Game = {
         depth = scores[i][1] + '';
         total = scores[i][2] + '';
         bestWord = scores[i][3];
+        rebalanceVersion = scores[i][4];
         if (i == index) {
           this.display.draw(0, y, '\u2571', 'yellow');
           this.display.draw(0, y+1, '\u2572', 'yellow');
           this.display.draw(w-1, y, '\u2572', 'yellow');
           this.display.draw(w-1, y+1, '\u2571', 'yellow');
         }
+        if (rebalanceVersion === undefined || rebalanceVersion < 1)
+          this.display.draw(0, y, '*', 'gray');
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
         this.display.draw(4, y,
                           victoryColor ? '@' : '\u2620',
@@ -1450,11 +1454,14 @@ var maybeAddScore = function(attempt) {
               formatSpell(attempt.spellsCast[bestSpellIndex],
                           values[bestSpellIndex]) :
               null,
+          1,
       ],
       scores = Game.loadHighScores()
           .concat(score[2] > 0 ? [score] : [])
           .sort(function(a, b) {
-                  return a[0] && !b[0] ? -1 :
+                  return a[4] && !b[4] || a[4] > b[4] ? -1 :
+                         b[4] && !a[4] || b[4] > a[4] ? 1 :
+                         a[0] && !b[0] ? -1 :
                          b[0] && !a[0] ? 1 :
                          b[2] - a[2];
                 })
