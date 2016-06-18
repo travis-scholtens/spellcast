@@ -199,7 +199,7 @@ depth_avg_value = { d: sum([values[l] * depth_dist[d][l]
                             for l in depth_dist[d]])
                     for d in depth_dist }
 
-enemies_per_level = [None, 2, 4.5, 7.5, 11] + [15] * (31 - 4)
+enemies_per_level = [None, 2, 4.5, 7.5, 11] + [15 + 2*i for i in range(35)]
 
 # 100 tiles in Scrabble => ~50 per player, or 7 sets of 7 tiles each game
 # If being "good" means getting one bingo per game, and "expert" means three,

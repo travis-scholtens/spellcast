@@ -419,8 +419,7 @@ var _generateMap = function(depth, rngState, shrineDist) {
               level.depth == 2 ? [4, 5] :
               level.depth == 3 ? [6, 9] :
               level.depth == 4 ? [9, 13] :
-              level.depth <= 26 ? [12, 18] :
-              [2*level.depth - 41, 2*level.depth - 33];
+              [2*level.depth + 2, 2*level.depth + 8];
   for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
     var foe = new Foe(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
