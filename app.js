@@ -89,11 +89,12 @@ var shrineDistribution = function() {
          }(shrines);
 };
 
-var FoeKind = function(glyph, name, color, health, value, frequency) {
+var FoeKind = function(glyph, name, color, health, speed, value, frequency) {
   this.glyph = glyph;
   this.name = name;
   this.color = color;
   this.health = health;
+  this.speed = speed;
   this.value = value;
   this.frequency = frequency;
 };
@@ -1772,7 +1773,7 @@ Foe.prototype.state = function() {
   return state;
 }
 
-Foe.prototype.getSpeed = function() { return 100; }
+Foe.prototype.getSpeed = function() { return this.effectiveKind().speed; }
 
 Foe.prototype.chooseShiftedKind = function() {
   return Game.glyphKind[ROT.RNG.getWeightedValue(foeDistribution(foeKinds, this.level.depth))];

@@ -89,6 +89,35 @@ healths = {
   'z': 25
 }
 
+speeds = {
+  'a': 100,
+  'b': 104,
+  'c': 108,
+  'd': 112,
+  'e': 116,
+  'f': 120,
+  'g': 124,
+  'h': 128,
+  'i': 132,
+  'j': 136,
+  'k': 140,
+  'l': 144,
+  'm': 148,
+  'n': 152,
+  'o': 156,
+  'p': 160,
+  'q': 164,
+  'r': 168,
+  's': 172,
+  't': 176,
+  'u': 180,
+  'v': 184,
+  'w': 188,
+  'x': 192,
+  'y': 196,
+  'z': 200
+}
+
 names = {
   'a': 'ant',
   'b': 'bogle',
@@ -153,10 +182,10 @@ abcs = 'abcdefghijklmnopqrstuvwxyz'
 with open('foes.js', 'w') as f:
   f.write('var foeKinds = [\n')
   for glyph in abcs:
-    f.write("    new FoeKind('{}', '{}', '{}', {}, {}, {}),\n".format(
-            glyph, *[d[glyph] for d in (names, colors, healths, values, frequencies)]))
+    f.write("    new FoeKind('{}', '{}', '{}', {}, {}, {}, {}),\n".format(
+            glyph, *[d[glyph] for d in (names, colors, healths, speeds, values, frequencies)]))
   f.write(']\n')
-  f.write("var shapeshifter = new FoeKind('.', 'metamorph', 'gray', undefined, {}, {});\n".format(
+  f.write("var shapeshifter = new FoeKind('.', 'metamorph', 'gray', undefined, undefined, {}, {});\n".format(
           *[d['.'] for d in (values, frequencies)]))
 
 def dist(letters):
@@ -212,10 +241,14 @@ depth_avg_health = { d: sum([(healths[l] if l in healths else max(healths.values
                              for l in depth_dist[d]])
                      for d in depth_dist }
 
+depth_avg_speed = { d: sum([(speeds[l] if l in speeds else max(speeds.values())) * depth_dist[d][l]
+                            for l in depth_dist[d]])
+                    for d in depth_dist }
+
 # for variety, alternate between increasing average attack damage and player speed
 def next_upgrade(target_damage_rate):
   def upgrade_speed(damage_rate, current_damage, current_speed):
-    return current_damage, max(current_speed + 1, damage_rate/current_damage/target_damage_rate)
+    return current_damage, current_speed + 8
   def upgrade_damage(damage_rate, current_damage, current_speed):
     return max(current_damage + 0.1, damage_rate/current_speed/target_damage_rate), current_speed
   while True:
@@ -224,7 +257,6 @@ def next_upgrade(target_damage_rate):
 
 # these are constant
 damage_per_enemy_dealt_hit = 3
-enemy_speed = 100
 
 def stats_at_level():
   # these will get buffed by level gains
@@ -235,6 +267,7 @@ def stats_at_level():
   upgrade = next_upgrade(75)
   for l in range(1, 32):
     enemy_health = depth_avg_health[l if l in depth_avg_health else max(depth_avg_health.keys())]
+    enemy_speed = depth_avg_speed[l if l in depth_avg_speed else max(depth_avg_speed.keys())]
     damage_to_player_rate = enemies_per_level[l] * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
     damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
     # yield the current stats at this level
@@ -249,7 +282,7 @@ def lifespan_by_depth_and_level():
     by_level = []
     for l in range(len(stats)):
       damage_per_player_dealt_hit, player_speed = stats[l]
-      damage_to_player_rate = enemies_per_level[d] * depth_avg_health[d if d in depth_avg_health else max(depth_avg_health.keys())] * enemy_speed * damage_per_enemy_dealt_hit
+      damage_to_player_rate = enemies_per_level[d] * depth_avg_health[d if d in depth_avg_health else max(depth_avg_health.keys())] * depth_avg_speed[l if l in depth_avg_speed else max(depth_avg_speed.keys())] * damage_per_enemy_dealt_hit
       damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
       by_level.append(damage_to_player/50)
     lifespans.append(by_level)
