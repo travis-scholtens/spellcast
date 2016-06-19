@@ -1221,6 +1221,8 @@ var walkPath = function(attempt) {
     revealFrom(attempt, player.level, {x: player._x, y: player._y});
     return true;
   }
+  if (loc !== null)
+    path.unshift(loc);
   return false;
 }
 
