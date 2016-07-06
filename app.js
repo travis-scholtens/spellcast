@@ -419,7 +419,9 @@ var _generateMap = function(depth, rngState, shrineDist) {
               level.depth == 2 ? [4, 5] :
               level.depth == 3 ? [6, 9] :
               level.depth == 4 ? [9, 13] :
-              [2*level.depth + 2, 2*level.depth + 8];
+              level.depth <= 26 ? [(level.depth-5)*(level.depth-5)/60 + 10,
+                                   (level.depth-5)*(level.depth-5)/60 + 20] :
+              [2*level.depth - 36, 2*level.depth - 26];
   for (var i = 0; i < ROT.RNG.getUniformInt(foeLimits[0], foeLimits[1]); i++) {
     var loc = this.newBeingLocation(freeCells);
     var foe = new Foe(Game.glyphKind[ROT.RNG.getWeightedValue(kinds)], level, loc.x, loc.y);
@@ -975,7 +977,7 @@ var Game = {
           this.display.draw(w-1, y, '\u2572', 'yellow');
           this.display.draw(w-1, y+1, '\u2571', 'yellow');
         }
-        if (rebalanceVersion === undefined || rebalanceVersion < 1)
+        if (rebalanceVersion === undefined || rebalanceVersion < 4)
           this.display.draw(0, y, '*', 'gray');
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
         this.display.draw(4, y,
@@ -1456,7 +1458,7 @@ var maybeAddScore = function(attempt) {
               formatSpell(attempt.spellsCast[bestSpellIndex],
                           values[bestSpellIndex]) :
               null,
-          1,
+          4,
       ],
       scores = Game.loadHighScores()
           .concat(score[2] > 0 ? [score] : [])

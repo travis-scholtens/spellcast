@@ -199,7 +199,7 @@ depth_avg_value = { d: sum([values[l] * depth_dist[d][l]
                             for l in depth_dist[d]])
                     for d in depth_dist }
 
-enemies_per_level = [None, 2, 4.5, 7.5, 11] + [15 + 2*i for i in range(35)]
+enemies_per_level = [None, 2, 4.5, 7.5, 11] + [i*i/60+15 for i in range(22)] + [2*(i+27)-31 for i in range(13)]
 
 # 100 tiles in Scrabble => ~50 per player, or 7 sets of 7 tiles each game
 # If being "good" means getting one bingo per game, and "expert" means three,
@@ -263,15 +263,18 @@ def stats_at_level():
   damage_per_player_dealt_hit = 5
   player_speed = 75
 
-  # player has 50 health, refilled each experience level; try to sap 125 of it each level
-  upgrade = next_upgrade(125)
+  floor_damages = [None, 2, 4.5, 7.5, 11]
+
+  # player has 50 health, refilled each experience level; try to sap 60 of it each level
+  upgrade = next_upgrade(60)
   for l in range(1, 32):
     enemy_health = depth_avg_health[l if l in depth_avg_health else max(depth_avg_health.keys())]
     enemy_speed = depth_avg_speed[l if l in depth_avg_speed else max(depth_avg_speed.keys())]
     damage_to_player_rate = enemies_per_level[l] * enemy_health * enemy_speed * damage_per_enemy_dealt_hit
     damage_to_player = damage_to_player_rate / player_speed / damage_per_player_dealt_hit
     # yield the current stats at this level
-    yield damage_per_player_dealt_hit, player_speed
+    damage = floor_damages[int((l+1)/2)] if int((l+1)/2) in range(len(floor_damages)) else damage_per_player_dealt_hit
+    yield damage, player_speed
     # upgrade to the next level
     damage_per_player_dealt_hit, player_speed = next(upgrade)(damage_to_player_rate, damage_per_player_dealt_hit, player_speed)
 
