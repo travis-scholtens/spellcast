@@ -132,6 +132,7 @@ var Attempt = function(state) {
   } else {
     this.rngState = ROT.RNG.getState();
     this.ascended = false;
+    this.balanceVersion = Game.balanceVersion;
     this.complete = false;
     this.player = null;
     this.shrines = shrineDistribution();
@@ -186,6 +187,7 @@ var fov = function(level) {
 Attempt.prototype.restore = function(state) {
   this.rngState = state.s;
   this.ascended = state.a;
+  this.balanceVersion = 'b' in state ? state.b : -1;
   this.complete = state.f;
   this.levels = [];
   this.player = new Player(state.player);
@@ -202,6 +204,7 @@ Attempt.prototype.state = function() {
       sh: this.shrines,
       s: this.rngState,
       a: this.ascended,
+      b: this.balanceVersion,
       f: this.complete,
       c: this.spellsCast.map(function(s) {
            return [s.tiles, s.depth, s.shrine];
@@ -715,6 +718,7 @@ var drawButton = function(display, button, origin, xmax, ymax) {
 
 var Game = {
     version: 9,
+    balanceVersion: 6,
     display: null,
     engine: null,
     scheduler: null,
@@ -977,7 +981,7 @@ var Game = {
           this.display.draw(w-1, y, '\u2572', 'yellow');
           this.display.draw(w-1, y+1, '\u2571', 'yellow');
         }
-        if (rebalanceVersion === undefined || rebalanceVersion < 4)
+        if (rebalanceVersion === undefined || rebalanceVersion < Game.balanceVersion)
           this.display.draw(0, y, '*', 'gray');
         this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
         this.display.draw(4, y,
@@ -1458,13 +1462,13 @@ var maybeAddScore = function(attempt) {
               formatSpell(attempt.spellsCast[bestSpellIndex],
                           values[bestSpellIndex]) :
               null,
-          4,
+          attempt.balanceVersion,
       ],
       scores = Game.loadHighScores()
           .concat(score[2] > 0 ? [score] : [])
           .sort(function(a, b) {
-                  return a[4] && !b[4] || a[4] > b[4] ? -1 :
-                         b[4] && !a[4] || b[4] > a[4] ? 1 :
+                  return a[4] == Game.balanceVersion && b[4] != Game.balanceVersion ? -1 :
+                         b[4] == Game.balanceVersion && a[4] != Game.balanceVersion ? 1 :
                          a[0] && !b[0] ? -1 :
                          b[0] && !a[0] ? 1 :
                          b[2] - a[2];
