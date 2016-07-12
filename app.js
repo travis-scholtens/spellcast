@@ -957,7 +957,7 @@ var Game = {
     },
 
     showHighScores: function(index) {
-      var scores = this.loadHighScores().slice(0, 8),
+      var scores = sortScores(this.loadHighScores()).slice(0, 8),
           i,
           y,
           victoryColor,
@@ -1451,6 +1451,16 @@ var spellValues = function(spellsCast) {
                         });
 };
 
+var sortScores = function(scores) {
+  return scores.sort(function(a, b) {
+                       return a[4] == Game.balanceVersion && b[4] != Game.balanceVersion ? -1 :
+                              b[4] == Game.balanceVersion && a[4] != Game.balanceVersion ? 1 :
+                              a[0] && !b[0] ? -1 :
+                              b[0] && !a[0] ? 1 :
+                              b[2] - a[2];
+                     });
+}
+
 var maybeAddScore = function(attempt) {
   var values = spellValues(attempt.spellsCast),
       bestSpellIndex = values.indexOf(Math.max.apply(Math, values)),
@@ -1464,16 +1474,9 @@ var maybeAddScore = function(attempt) {
               null,
           attempt.balanceVersion,
       ],
-      scores = Game.loadHighScores()
-          .concat(score[2] > 0 ? [score] : [])
-          .sort(function(a, b) {
-                  return a[4] == Game.balanceVersion && b[4] != Game.balanceVersion ? -1 :
-                         b[4] == Game.balanceVersion && a[4] != Game.balanceVersion ? 1 :
-                         a[0] && !b[0] ? -1 :
-                         b[0] && !a[0] ? 1 :
-                         b[2] - a[2];
-                })
-          .slice(0, 12);
+      scores =
+          sortScores(Game.loadHighScores()
+                         .concat(score[2] > 0 ? [score] : [])).slice(0, 12);
   Game.saveHighScores(scores);
   return scores.indexOf(score);
 };
