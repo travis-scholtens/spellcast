@@ -1214,7 +1214,8 @@ var walkPath = function(attempt) {
       level = player.level,
       map = level.map,
       tile = loc != null ? map[loc[0] + ',' + loc[1]] : { passable: false },
-      shrine = null;
+      shrine = null,
+      messageCount = attempt.messages.length;
   if (tile.passable && tile.revealed && tile.contents === null) {
     player._x = loc[0];
     player._y = loc[1];
@@ -1225,6 +1226,8 @@ var walkPath = function(attempt) {
     if (level.shrine && player._x == level.shrine.x && player._y == level.shrine.y)
       path.length = 0;
     revealFrom(attempt, player.level, {x: player._x, y: player._y});
+    if (attempt.messages.length > messageCount)
+      path.length = 0;
     return true;
   }
   if (loc !== null)
