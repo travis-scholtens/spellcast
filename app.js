@@ -982,8 +982,8 @@ var Game = {
           this.display.draw(w-1, y+1, '\u2571', 'yellow');
         }
         if (rebalanceVersion === undefined || rebalanceVersion < Game.balanceVersion)
-          this.display.draw(0, y, '*', 'gray');
-        this.display.drawText((i < 9 ? 2 : 1), y, (i+1) + '.');
+          this.display.draw(i == index ? 1 : 0, y, '*', 'gray');
+        this.display.drawText(2, y, (i+1) + '.');
         this.display.draw(4, y,
                           victoryColor ? '@' : '\u2620',
                           victoryColor || 'gray');
