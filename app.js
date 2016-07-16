@@ -1871,6 +1871,7 @@ Foe.prototype.attack = function(player) {
 }
 
 Foe.prototype.act = function() {
+  if (!this.revealed) return;
   var loc = { x: this._x, y: this._y },
       playerLoc = { x: Game.attempt.player._x, y: Game.attempt.player._y },
       inView = locInView(this.level, loc, playerLoc),
