@@ -1875,7 +1875,9 @@ Foe.prototype.act = function() {
       playerLoc = { x: Game.attempt.player._x, y: Game.attempt.player._y },
       inView = locInView(this.level, loc, playerLoc),
       nextLoc = inView || this.lastSawPlayer !== null ?
-          nextStepTo(this.level, loc, playerLoc) : null;
+          nextStepTo(this.level, loc, playerLoc) : null,
+      lastActed = this.lastActedAt;
+  this.lastActedAt = Game.scheduler.getTime();
 
   if (inView)
     this.lastSawPlayer = 0;
@@ -1918,5 +1920,12 @@ Foe.prototype.act = function() {
     this._x = nextLoc.x;
     this._y = nextLoc.y;
     this.level.map[this._x + ',' + this._y].contents = this;
+  }
+
+  if (lastActed > Game.display.lastDrawnAt) {
+    Game._drawWholeMap(Game.attempt);
+    return { then: function(cb) {
+                     setTimeout(function() { cb(); }, 100);
+                   } };
   }
 }
