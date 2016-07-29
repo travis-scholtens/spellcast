@@ -592,6 +592,10 @@ var drawScore = function(display, xmax, y, score) {
   display.drawText(x, y, text);
 }
 
+var renderedLength = function(s) {
+  return s.replace(/\%.{.*?}/g, '').length;
+}
+
 var wrapMessages = function(messages, width) {
   var i,
       prefix = ['>'],
@@ -603,7 +607,7 @@ var wrapMessages = function(messages, width) {
     tokens = prefix.concat(messages[i].split(' '));
     while (tokens.length > 0) {
       line = tokens.shift();
-      while (tokens.length > 0 && line.length + tokens[0].length + 1 < width)
+      while (tokens.length > 0 && renderedLength(line) + renderedLength(tokens[0]) + 1 < width)
         line = [line, tokens.shift()].join(' ');
       wrapped.push(line);
       if (tokens.length > 0)
