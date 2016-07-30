@@ -19,6 +19,8 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	echo $(WORDS_AM_NAME).js >> dist/index.appcache
 	echo $(WORDS_NZ_NAME).js >> dist/index.appcache
 	echo '# $(shell date -u +%Y-%m-%d-%H-%M-%S)' >> dist/index.appcache
+	cat dist/index.appcache | sed -e 's/#.*//' | grep . | awk 'f;/^CACHE:/{f=1}' | sed -e "s/\(.*\)/    '\1',/" > urls.txt
+	sed '/var urlsToCache = \[/r urls.txt' sw.js > dist/sw.js
 
 stop_robots:
 	echo 'User-agent: *' > dist/robots.txt
