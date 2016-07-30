@@ -1601,8 +1601,9 @@ Player.prototype.clickRackTile = function(index, map) {
               }
           if (clicked) {
             Game.attempt.mode.pop();
-            Game._drawWholeMap(Game.attempt);
-            if (!cancelled) {
+            if (cancelled)
+              Game._drawWholeMap(Game.attempt);
+            else {
               Game.save();
               Game.attempt.player.acting = false;
               Game.engine.unlock();
