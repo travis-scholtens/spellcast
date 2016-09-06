@@ -20,6 +20,10 @@ all: a.out.js compiled_words_am.js compiled_words_nz.js index.html manifest.json
 	echo $(WORDS_NZ_NAME).js >> dist/index.appcache
 	echo '# $(shell date -u +%Y-%m-%d-%H-%M-%S)' >> dist/index.appcache
 
+stop_robots:
+	echo 'User-agent: *' > dist/robots.txt
+	echo 'Disallow: /' >> dist/robots.txt
+
 icon_36.png: icon.svg
 	inkscape -z -e $@ -w 36 $<
 
