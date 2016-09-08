@@ -18,7 +18,7 @@ OS2Version: 3
 OS2_WeightWidthSlopeOnly: 0
 OS2_UseTypoMetrics: 1
 CreationTime: 1203284335
-ModificationTime: 1460083453
+ModificationTime: 1475115081
 PfmFamily: 49
 TTFWeight: 400
 TTFWidth: 5
@@ -544,7 +544,7 @@ NameList: Adobe Glyph List
 DisplaySize: -36
 AntiAlias: 1
 FitToEm: 1
-WinInfo: 9632 16 12
+WinInfo: 9856 16 12
 BeginPrivate: 9
 UniqueID 7 5020945
 BlueValues 39 [-20 0 417 437 480 490 563 583 640 650]
@@ -564,7 +564,7 @@ Grid
 EndSplineSet
 TeXData: 1 0 0 629146 314573 209715 437256 1048576 209715 783286 444596 497025 792723 393216 433062 380633 303038 157286 324010 404750 52429 2506097 1059062 262144
 AnchorClass2: "ring-arabic"  "'mark' marks in Arabic subtable" "far-right-dot"  "'mark' marks generic high-1" "belowmk"  "'mkmk' mark-to-mark generic-low" "abovemk"  "'mkmk' mark-to-mark generic-high" "dev-abv-mark"  "'mkmk' mark-to-mark in Devanagari-1" "viet-hook"  "'mkmk' mark-to-mark in Latin-for Viet" "viet-grave"  "'mkmk' mark-to-mark in Latin-for Viet" "viet-acute"  "'mkmk' mark-to-mark in Latin-for Viet" "dev-above"  "'abvm' above-base marks in Devanagari-1" "dev-rakaar"  "'blwm' rakaar in Devanagari" "dev-below"  "'blwm' below-base mark in Devanagari" "dev-nukta"  "'blwm' nukta in Devanagari" "abovecyr"  "'mark' marks in Cyrillic subtable" "above_arabic"  "'mark' marks in Arabic subtable" "below_arabic"  "'mark' marks in Arabic subtable" "arab_diacritic"  "'mkmk' mark-to-mark in Arabic subtable" "abovegk"  "'mark' marks in Greek subtable" "below"  "'mark' marks generic low-1" "above"  "'mark' marks generic high-1" 
-BeginChars: 67329 303
+BeginChars: 67329 305
 
 StartChar: space
 Encoding: 32 32 0
@@ -1493,7 +1493,7 @@ EndChar
 StartChar: at
 Encoding: 64 64 32
 Width: 600
-Flags: HMWO
+Flags: HMW
 LayerCount: 2
 Fore
 SplineSet
@@ -8276,7 +8276,7 @@ EndChar
 StartChar: uni259A
 Encoding: 9626 9626 261
 Width: 600
-Flags: HMWO
+Flags: HMW
 LayerCount: 2
 Fore
 SplineSet
@@ -8937,7 +8937,7 @@ EndChar
 StartChar: uni2610
 Encoding: 9744 9744 287
 Width: 600
-Flags: HMWO
+Flags: HMW
 LayerCount: 2
 Fore
 Refer: 268 9633 N 1 0 0 1 0 0 0
@@ -9163,7 +9163,7 @@ EndChar
 StartChar: uni261D
 Encoding: 9757 9757 296
 Width: 600
-Flags: HMWO
+Flags: HMW
 LayerCount: 2
 Fore
 SplineSet
@@ -9218,7 +9218,7 @@ EndChar
 StartChar: uni261F
 Encoding: 9759 9759 297
 Width: 600
-Flags: HMWO
+Flags: HMW
 LayerCount: 2
 Fore
 SplineSet
@@ -9414,7 +9414,7 @@ EndChar
 StartChar: uni2620
 Encoding: 9760 9760 302
 Width: 600
-Flags: HWO
+Flags: HW
 LayerCount: 2
 Fore
 SplineSet
@@ -9477,6 +9477,59 @@ SplineSet
  89 229 95 239 110 239 c 0
  131 239 161 205 177 185 c 1
  212 173 253 154 302 130 c 1
+EndSplineSet
+EndChar
+
+StartChar: uni2713
+Encoding: 10003 10003 303
+Width: 600
+Flags: HW
+LayerCount: 2
+Fore
+SplineSet
+122 213 m 0
+ 122 217 125 233 142 233 c 0
+ 148 233 155 230 159 224 c 2
+ 234 107 l 1
+ 435 415 l 2
+ 439 421 445 424 451 424 c 0
+ 462 424 471 416 471 404 c 0
+ 471 400 470 396 468 392 c 2
+ 250 60 l 25
+ 217 60 l 1
+ 125 202 l 2
+ 123 206 122 209 122 213 c 0
+EndSplineSet
+EndChar
+
+StartChar: uni2717
+Encoding: 10007 10007 304
+Width: 600
+Flags: HW
+LayerCount: 2
+Fore
+SplineSet
+450 420 m 0
+ 466 420 470 405 470 400 c 0
+ 470 395 468 390 464 386 c 2
+ 328 250 l 1
+ 464 114 l 2
+ 468 110 470 105 470 100 c 0
+ 470 84 455 80 450 80 c 0
+ 445 80 440 82 436 86 c 2
+ 300 222 l 1
+ 164 86 l 2
+ 160 82 155 80 150 80 c 0
+ 134 80 130 95 130 100 c 0
+ 130 105 132 110 136 114 c 2
+ 272 250 l 1
+ 136 386 l 2
+ 132 390 130 395 130 400 c 0
+ 130 416 145 420 150 420 c 0
+ 155 420 160 418 164 414 c 2
+ 300 278 l 1
+ 436 414 l 2
+ 440 418 445 420 450 420 c 0
 EndSplineSet
 EndChar
 EndChars

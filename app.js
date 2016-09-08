@@ -138,6 +138,7 @@ var Attempt = function(state) {
     this.shrines = shrineDistribution();
     this.rack = [];
     this.spellsCast = [];
+    this.dictionary = { goodWords: [], badPatterns: [] };
   
     this.levels = [_generateMap(1, this.rngState, this.shrines)];
     localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
@@ -196,6 +197,10 @@ Attempt.prototype.restore = function(state) {
   this.spellsCast = state.c.map(function(s) {
     return { tiles: s[0], depth: s[1], shrine: s[2] };
   });
+  this.dictionary = 'd' in state ?
+      { goodWords: state.d.g,
+        badPatterns: state.d.b.map(function(p) { return new RegExp(p); }) } :
+      { goodWords: [], badPatterns: [] };
 }
 
 Attempt.prototype.state = function() {
@@ -208,8 +213,9 @@ Attempt.prototype.state = function() {
       f: this.complete,
       c: this.spellsCast.map(function(s) {
            return [s.tiles, s.depth, s.shrine];
-         })
-      };
+         }),
+      d: { g: this.dictionary.goodWords,
+           b: this.dictionary.badPatterns.map(function(re) { return re.source; }) }};
 }
 
 Attempt.prototype.restoreLevel = function(state) {
@@ -260,6 +266,50 @@ Attempt.prototype.levelState = function(i) {
       foeData: listState(this.levels[i].foes)
       };
   return state;
+}
+
+// Add the resulting word from a given successfully cast spell ("boa" or "(b)o(a)", not
+// the original tiles like ".o.") to the dictionary of good spells.
+Attempt.prototype.addSuccessfulSpellWord = function(word) {
+  var bareWord = word.replace(/[()]/g, '');
+  if (this.dictionary.goodWords.indexOf(bareWord) == -1)
+    this.dictionary.goodWords.push(bareWord);
+}
+
+// Add the given failed spell ('baf' or 'b.f') to the dictionary of bad spells.
+Attempt.prototype.addFailedSpell = function(spell) {
+  if (this.dictionary.badPatterns.indexOf(spell) == -1)
+    this.dictionary.badPatterns.push(new RegExp('^' + spell + '$'));
+}
+
+// Returns true if the given spell will definitely succeed based on the dictionary
+// of attempted spells.
+//
+// A spell containing any blanks will succeed if the pattern matches any successfully
+// cast spell. So having already cast "cut", the spell "c.t" will return true (even
+// though when the spell is cast it will appear as "C(A)T").
+Attempt.prototype.spellWillSucceed = function(spell) {
+  var re = new RegExp('^' + spell + '$');
+  if (this.dictionary.goodWords.some(function(word) { return word.match(re); }))
+    return true;
+}
+
+// Returns true if the given spell will definitely fail based on the dictionary
+// of attempted spells.
+//
+// A failed spell that contains any blanks provides failure information for any
+// matching candidate spells. So if "z.q" already failed, then "zaq," "ziq" and
+// "zoq" will all return true.
+//
+// Note that we never return true if the given *argument* spell contains any blanks;
+// this is technically incorrect, as in theory a player may have already tried
+// 'baf', 'bbf', 'bcf' and so on all the way through 'bzf', in which case we should
+// know that 'b.f' won't work. But please.
+Attempt.prototype.spellWillFail = function(spell) {
+  // Note that a pattern like /^th.ng$/ will match the spell string "th.ng", so no need
+  // to treat blanks in the argument specially.
+  if (this.dictionary.badPatterns.some(function(pattern) { return spell.match(pattern); }))
+    return true;
 }
 
 var ninetyDegreeAdjacentWalls = function(level, loc, dir) {
@@ -722,7 +772,7 @@ var drawButton = function(display, button, origin, xmax, ymax) {
 
 var Game = {
     version: 9,
-    balanceVersion: 6,
+    balanceVersion: 7,
     display: null,
     engine: null,
     scheduler: null,
@@ -1528,6 +1578,15 @@ Player.prototype.clickRackTile = function(index, map) {
           this.modalTiles[i].corpse.glyph, this.modalTiles[i].color,
           shrine && (shrine.isWholeWord || i == bestLetterIndex) ? shrine : null);
     }
+    var spell = this.modalTiles.map(function(t) { return t.corpse.glyph; }).join('');
+    if (Game.attempt.spellWillSucceed(spell))
+      Game.display.draw(result.center.x + 4,
+                        result.center.y - height/2 + height - 3,
+                        '\u2713', 'lime');
+    else if (Game.attempt.spellWillFail(spell))
+      Game.display.draw(result.center.x + 4,
+                        result.center.y - height/2 + height - 3,
+                        '\u2717', 'red');
     Game.drawRackTiles(
         Game.attempt.player.level.map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse);
     if (Game.attempt.mode.length > 0)
@@ -1580,6 +1639,7 @@ Player.prototype.clickRackTile = function(index, map) {
                     var previousExperience = player.experience,
                         score = spellValue(spell, shrine);
                     player.experience += score;
+                    Game.attempt.addSuccessfulSpellWord(word);
                     Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine });
                     Game.attempt.message('You cast ' + formatCastSpell(word, shrine) + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
@@ -1590,8 +1650,10 @@ Player.prototype.clickRackTile = function(index, map) {
                       Game.showGameSummary(Game.attempt);
                     }
                   }
-                  else
+                  else {
+                    Game.attempt.addFailedSpell(spell);
                     Game.attempt.message('Nothing happens.');
+                  }
                 }
                 tiles.length = 0;
                 clicked = true;
