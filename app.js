@@ -79,6 +79,118 @@ var shrines = [
     new Shrine(3, true, 2, 'red', 'Troilogos'),
 ];
 
+// Definition of an achievement. The key is what's stored by the game and attempt
+// when it's unlocked. The deps are keys of other achievements that need to be
+// unlocked first. Set retired rather than deleting an existing achievement:
+// this way it can still be displayed for players who've unlocked it, but ignored
+// everywhere else and no longer awarded.
+// The doneMsg is the one used at the end of the game; if undefined then it falls
+// back to the didMsg, which is also used if the achievement is awarded mid-game.
+var Achievement = function(key, retired, name, todoMsg, didMsg, doneMsg, deps) {
+  this.key = key;
+  this.retired = retired;
+  this.name = name;
+  this.todoMsg = todoMsg;
+  this.didMsg = didMsg;
+  this.doneMsg = doneMsg;
+  this.deps = deps;
+};
+
+var achievements = [
+  new Achievement('use_every_foe',
+                  false,
+                  'Trophy Hunter',
+                  'Use each type of monster in at least one spell.',
+                  'You have cast a spell with the corpse of each type of monster!',
+                  'You cast a spell with every type of monster.'),
+  new Achievement('xyzzy',
+                  false,
+                  'Magic Word',
+                  'Use the canonical magic word.',
+                  'You cast XYZZY. Nothing happens.',
+                  'You cast XYZZY. Nothing happened.'),
+  new Achievement('every_shrine',
+                  false,
+                  'Zealot',
+                  'Cast a spell at all fifteen shrines.',
+                  'You have shown your devotion to the gods by casting a spell at every shrine.',
+                  'You showed your devotion to the gods by casting a spell at every shrine.'),
+  new Achievement('earliest_bingo',
+                  false,
+                  'Prodigy',
+                  'Cast a seven-corpse spell before descending the third stair.',
+                  'You have cast a very powerful spell at a shallow depth!',
+                  'You cast a very powerful spell at a shallow depth.'),
+  new Achievement('victory',
+                  false,
+                  'Victory',
+                  'Cast YENDOR.',
+                  'You ascended from the depths and are a true wizard!'),
+  new Achievement('victory_no_shrines',
+                  false,
+                  'Atheist',
+                  'Cast YENDOR without attempting to cast a spell at any shrines.',
+                  'You ascended while eschewing religious pieties!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_no_fizzles',
+                  false,
+                  'Perfectionist',
+                  'Cast YENDOR without ever attempting a nonexistant spell.',
+                  'You ascended without ever attempting a nonexistant spell!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_use_every_corpse',
+                  false,
+                  'Productivity',
+                  'Cast YENDOR without letting any corpses go to waste.',
+                  'You ascended without wasting a corpse!',
+                  undefined,
+                  ['victory_no_fizzles']),
+  new Achievement('victory_shallowest',
+                  false,
+                  'Eager Beaver',
+                  'Cast YENDOR before descending to depth 26.',
+                  'You ascended before even risking a zombie encounter!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_no_bingos',
+                  false,
+                  'Small Ball',
+                  'Cast YENDOR without casting any seven-corpse spells.',
+                  'You ascended without dabbling in more powerful magicks.',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_kill_all_seen',
+                  false,
+                  'Take No Prisoners',
+                  "Cast YENDOR having slain every monster you've seen.",
+                  'You ascended after killing every monster you saw!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_clear_every_depth',
+                  false,
+                  'Cleaner',
+                  'Cast YENDOR having slain every monster at every visited depth.',
+                  'You ascended after hunting down every monster!',
+                  undefined,
+                  ['victory_kill_all_seen']),
+  new Achievement('victory_at_low_level',
+                  false,
+                  'Precocity',
+                  'Cast YENDOR while having no more than 100 experience points.',
+                  'You ascended with a very low experience level!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_no_repeats',
+                  false,
+                  'Variety',
+                  'Cast YENDOR having never cast the same spell twice.',
+                  'You ascended without repeating a spell!',
+                  undefined,
+                  ['victory'])
+];
+
 var shrineDistribution = function() {
   return function(ss) {
            var map = {};
@@ -136,9 +248,15 @@ var Attempt = function(state) {
     this.complete = false;
     this.player = null;
     this.shrines = shrineDistribution();
+    this.triedShrine = false;
+    this.castAtShrines = 0;
+    this.usedFoes = {};
+    this.wastedCorpse = false;
     this.rack = [];
     this.spellsCast = [];
     this.dictionary = { goodWords: [], badPatterns: [] };
+    this.wordRepeated = false;
+    this.achievements = {};
   
     this.levels = [_generateMap(1, this.rngState, this.shrines)];
     localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
@@ -193,6 +311,10 @@ Attempt.prototype.restore = function(state) {
   this.levels = [];
   this.player = new Player(state.player);
   this.shrines = state.sh;
+  this.triedShrines = 'tsh' in state ? state.tsh : false;
+  this.castAtShrines = 'csh' in state ? state.csh : 0;
+  this.usedFoes = 'uf' in state ? state.uf : {};
+  this.wastedCorpse = 'w' in state ? state.w : false;
   this.rack = state.rack.map(function(c) { return new Corpse(c.g, c.t); });
   this.spellsCast = state.c.map(function(s) {
     return { tiles: s[0], depth: s[1], shrine: s[2],
@@ -202,12 +324,18 @@ Attempt.prototype.restore = function(state) {
       { goodWords: state.d.g,
         badPatterns: state.d.b.map(function(p) { return new RegExp(p); }) } :
       { goodWords: [], badPatterns: [] };
+  this.wordRepeated = 'r' in state ? state.r : true;
+  this.achievements = 'h' in state ? state.h : {};
 }
 
 Attempt.prototype.state = function() {
   return { player: this.player.state(),
       rack: this.rack.map(function(c) { return { g: c.glyph, t: Game.scheduler.getTime() - c.timeOfDeath }; }),
       sh: this.shrines,
+      tsh: this.triedShrine,
+      csh: this.castAtShrines,
+      uf: this.usedFoes,
+      w: this.wastedCorpse,
       s: this.rngState,
       a: this.ascended,
       b: this.balanceVersion,
@@ -216,7 +344,9 @@ Attempt.prototype.state = function() {
            return [s.tiles, s.depth, s.shrine, s.formatted];
          }),
       d: { g: this.dictionary.goodWords,
-           b: this.dictionary.badPatterns.map(function(re) { return re.source; }) }};
+           b: this.dictionary.badPatterns.map(function(re) { return re.source; }) },
+      r: this.wordRepeated,
+      h: this.achievements };
 }
 
 Attempt.prototype.restoreLevel = function(state) {
@@ -273,14 +403,38 @@ var deparenthesize = function(word) {
   return word.replace(/[()]/g, '');
 };
 
+// Returns true if any levels have any corpses on the ground.
+Attempt.prototype.levelsHaveCorpses = function() {
+  return this.levels.some(function(l) {
+                            for (var c in l.map) {
+                              if (l.map[c].corpse) return true;
+                            }
+                            return false;
+                          });
+}
+
+// Returns true if any levels have any living revealed foes.
+Attempt.prototype.levelsHaveFoesRevealed = function() {
+  return this.levels.some(function(l) {
+                            return l.foes.some(function(f) { return f.revealed; });
+                          });
+}
+
+// Returns true if any levels have any living foes.
+Attempt.prototype.levelsHaveFoes = function() {
+  return this.levels.some(function(l) { return l.foes.length; });
+}
+
 // Add the resulting word from a given successfully cast spell ("boa" or "(b)o(a)", not
 // the original tiles like ".o.") to the dictionary of good spells. If the word already
 // exists in the list, bump it to the end.
 Attempt.prototype.addSuccessfulSpellWord = function(word) {
   var bareWord = deparenthesize(word),
       index = this.dictionary.goodWords.indexOf(bareWord);
-  if (index >= 0)
+  if (index >= 0) {
+    this.wordRepeated = true;
     this.dictionary.goodWords.splice(index, 1)
+  }
   this.dictionary.goodWords.push(bareWord);
 }
 
@@ -318,6 +472,16 @@ Attempt.prototype.spellWillFail = function(spell) {
   // to treat blanks in the argument specially.
   if (this.dictionary.badPatterns.some(function(pattern) { return spell.match(pattern); }))
     return true;
+}
+
+// If the achievement keyed by the given name has its dependencies satisfied, unlock
+// it and return its completion message.
+Attempt.prototype.maybeUnlockAchievement = function(key) {
+  var message = Game.maybeUnlockAchievement(key);
+  if (message) {
+    this.achievements[key] = true;
+    return message;
+  }
 }
 
 var ninetyDegreeAdjacentWalls = function(level, loc, dir) {
@@ -554,7 +718,8 @@ var drawRackTile = function(display, x, y, glyph, color, shrine) {
 }
 
 Attempt.prototype.message = function(text) {
-  this.messages.push(text);
+  if (text)
+    this.messages.push(text);
 }
 
 var Direction = {
@@ -702,6 +867,11 @@ var handle = function(e) {
       acted = true;
       handled = true;
     }
+  } else if (Game.achievementsButtons) {
+    if (handleAchievementsClick(e)) {
+      acted = true;
+      handled = true;
+    }
   } else if (Game.showingTutorial || Game.showingHighScores) {
     Game.showTitle();
     Game.showingTutorial = false;
@@ -776,6 +946,18 @@ var drawButton = function(display, button, origin, xmax, ymax) {
   display.drawText(origin.x + xmax/2 - button.length/2 + button.search(/[^ ]/),
                    origin.y + ymax - 3,
                    button);
+}
+
+var formatAchievementMessage = function(key, message) {
+  var message = 'Achievement unlocked: ' + message,
+      revealed = achievements.filter(function(a) {
+        return !a.retired && a.deps && a.deps.indexOf(key) != -1;
+      }).map(function(a) { return a.name });
+  if (revealed.length == 1)
+    message += '\n\nNew achievement revealed: ' + revealed[0];
+  else if (revealed.length > 1)
+    message += '\n\n' + revealed.length + ' new achievements revealed';
+  return message;
 }
 
 var Game = {
@@ -961,7 +1143,7 @@ var Game = {
           xmax = this.display.getOptions().width,
           ymax,
           x,
-          y = 3,
+          y = 2,
           i,
           gameInProgress = function(gameState) {
                              if (gameState === undefined) return undefined;
@@ -987,10 +1169,12 @@ var Game = {
               action: function() { Game.showTutorial.call(Game); } },
           ].concat(this.loadHighScores().length > 0 ?
                    [ { text: 'High  Scores',
-                       action: function() { Game.showHighScores.call(Game, -1); } } ] :
+                       action: function() { Game.showHighScores.call(Game, -1); } },
+                     { text: 'Achievements',
+                       action: function() { Game.showAchievements.call(Game); } } ] :
                    []);
 
-      y = this.drawLogo(y) + 1 + spacing;
+      y = this.drawLogo(y) + spacing;
 
       this.titleButtons = buttons;
       for (i = 0; i < this.titleButtons.length; i++) {
@@ -1002,6 +1186,95 @@ var Game = {
               {x: origin.x + xmax/2 - this.titleButtons[i].text.length/2 + x,
                y: origin.y + ymax - 3});
       }
+    },
+
+    loadUnlockedAchievements: function() {
+      var version = 0,
+          key = 'spellyAchievements',
+          data = (key in localStorage ? JSON.parse(localStorage[key]) : undefined);
+      return data !== undefined && data[0] === version ? data[1] : {};
+    },
+
+    saveUnlockedAchievements: function(unlocked) {
+      var version = 0,
+          key = 'spellyAchievements';
+      localStorage[key] = JSON.stringify([version, unlocked]);
+    },
+
+    // If the achievement defined by the given key has all of its dependencies
+    // satisfied, then unlock it and return the completion message.
+    maybeUnlockAchievement: function(key) {
+      var achievement = achievements.find(function(a) { return a.key == key; }),
+          unlocked = this.loadUnlockedAchievements();
+      if (!(key in unlocked) &&
+          !achievement.retired &&
+          (!achievement.deps ||
+              achievement.deps.every(function(k) { return unlocked[k]; }))) {
+        unlocked[key] = true;
+        this.saveUnlockedAchievements(unlocked);
+        return formatAchievementMessage(achievement.key, achievement.didMsg);
+      }
+    },
+
+    showAchievements: function(index) {
+      var i,
+          y = 2,
+          unlocked = this.loadUnlockedAchievements(),
+          unlockedIndices = achievements.filter(function(a) { return a.key in unlocked; }).map(function(a) { return achievements.indexOf(a); }),
+          hidden = 0,
+          icon,
+          iconColor,
+          textColor,
+          options = this.display.getOptions(),
+          buttons = [];
+      this.display.clear();
+      for (i = 0; i < achievements.length; i++) {
+        // skip retired achievements unless they've already been unlocked
+        if (achievements[i].retired && !(achievements[i].key in unlocked))
+          continue;
+        if (unlockedIndices.indexOf(i) != -1) {
+          icon = '\ud83d\udd13'; // U+1f513
+          iconColor = 'yellow';
+          textColor = 'white';
+          this.display.draw(2, y, icon, iconColor);
+          this.display.drawText(4, y, surroundText(achievements[i].name, textColor));
+          buttons[i] = { index: i != index ? i : -1,
+                         locs: achievements[i].name.split('').map(function(_, i) { return { x: 4 + i, y: y }; })
+                       };
+          y += i == index ?
+              this.display.drawText(4, y+1, surroundText(achievements[i].todoMsg, textColor), options.width - 4) + 2 :
+              1;
+        }
+      }
+      for (i = 0; i < achievements.length; i++) {
+        // skip retired achievements unless they've already been unlocked
+        if (achievements[i].retired && !(achievements[i].key in unlocked))
+          continue;
+        // hide achievements whose prerequisites are still locked
+        if (achievements[i].deps &&
+            achievements[i].deps.some(function(d) { return !(d in unlocked); })) {
+          hidden++;
+          continue;
+        }
+        if (unlockedIndices.indexOf(i) == -1) {
+          icon = '\ud83d\udd12'; // U+1f512
+          iconColor = textColor = 'gray';
+          this.display.draw(2, y, icon, iconColor);
+          this.display.drawText(4, y, surroundText(achievements[i].name, textColor));
+          buttons[i] = { index: i != index ? i : -1,
+                         locs: achievements[i].name.split('').map(function(_, i) { return { x: 4 + i, y: y }; })
+                       };
+          y += i == index ?
+              this.display.drawText(4, y+1, surroundText(achievements[i].todoMsg, textColor), options.width - 4) + 2 :
+              1;
+        }
+      }
+      if (hidden > 0)
+        this.display.drawText(4, y+1, surroundText('+' + hidden + ' more still hidden', 'gray'), options.width - 4);
+      drawButton(Game.display, 'Done', {x: 0, y: 0}, options.width, options.height);
+      buttons.push({locs: 'Done'.split('').map(function(_, i) { return { x: options.width/2 - 4 + i,
+                                                                         y: options.height - 3 }; }) });
+      this.achievementsButtons = buttons;
     },
 
     loadHighScores: function() {
@@ -1055,9 +1328,30 @@ var Game = {
       }
     },
 
-    completeGame: function(attempt, won) {
-      if (won)
+    completeGame: function(attempt, won, previousExperience) {
+      var message;
+      if (won) {
         attempt.ascended = true;
+        if (!attempt.triedShrine)
+          attempt.maybeUnlockAchievement('victory_no_shrines');
+        if (attempt.levels.length < 26)
+          attempt.maybeUnlockAchievement('victory_shallowest');
+        if (attempt.dictionary.badPatterns.length == 0)
+          attempt.maybeUnlockAchievement('victory_no_fizzles');
+        if (previousExperience <= 100)
+          attempt.maybeUnlockAchievement('victory_at_low_level');
+        if (attempt.spellsCast.every(function(s) { return s.tiles.length < 7; }))
+          attempt.maybeUnlockAchievement('victory_no_bingos');
+        if (!attempt.wastedCorpse)
+          attempt.maybeUnlockAchievement('victory_use_every_corpse');
+        if (!attempt.levelsHaveFoesRevealed())
+          attempt.maybeUnlockAchievement('victory_kill_all_seen');
+        if (!attempt.levelsHaveFoes())
+          attempt.maybeUnlockAchievement('victory_clear_every_depth');
+        if (!attempt.wordRepeated)
+          attempt.maybeUnlockAchievement('victory_no_repeats');
+        attempt.maybeUnlockAchievement('victory');
+      }
       attempt.complete = true;
       Game.completedAt = new Date().getTime();
       Game.save();
@@ -1070,10 +1364,14 @@ var Game = {
           values = spellValues(attempt.spellsCast),
           bestSpellIndex = values.indexOf(Math.max.apply(Math, values)),
           lines = [
-              (attempt.ascended ? 'Won at' : player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth,
+              (attempt.ascended ? 'Won at' : player.getHealth() <= 0 ? 'Died at' : 'At') + ' depth ' + level.depth
+              ].concat(achievements
+                           .filter(function(a) { return a.key in attempt.achievements; })
+                           .map(function(a) { return formatAchievementMessage(a.key, a.doneMsg || a.didMsg); }))
+               .concat([
               'Spells cast: ' + attempt.spellsCast.length,
               'Total value: ' + values.reduce(function(a,b) { return a+b; }, 0),
-              ].concat(
+              ]).concat(
                   bestSpellIndex >= 0 ? [
                       'Best spell: ' +
                           formatSpell(attempt.spellsCast[bestSpellIndex],
@@ -1117,6 +1415,7 @@ var Game = {
                   if (tile.corpse.rotted()) {
                     attempt.message('The ' + Game.glyphKind[tile.corpse.glyph].name +
                                     ' corpse rots away to nothing.');
+                    attempt.wastedCorpse = true;
                     tile.corpse = null;
                     glyph = tile.glyph;
                   } else {
@@ -1529,6 +1828,7 @@ var checkWord = function(word, history) {
 
 var spellValue = function(spell, shrineType) {
   var score = 0,
+      bingo = false,
       shrine = shrineType !== null ? shrines[shrineType] : null,
       bestLetterValue =
           spell.split('').map(function(c) { return Game.values[c]; }).reduce(function(a,b) { return Math.max(a,b); }),
@@ -1537,14 +1837,16 @@ var spellValue = function(spell, shrineType) {
   for (i = 0; i < spell.length; i++)
     score += Game.values[spell[i]] *
              (shrine && (shrine.isWholeWord || i == bestLetterIndex) ? shrine.multiplier : 1);
-  if (spell.length >= 7)
+  if (spell.length >= 7) {
+    bingo = true;
     score += 50;
-  return score;
+  }
+  return [score, bingo];
 }
 
 var spellValues = function(spellsCast) {
   return spellsCast.map(function(castSpell) {
-                          return spellValue(castSpell.tiles, castSpell.shrine);
+                          return spellValue(castSpell.tiles, castSpell.shrine)[0];
                         });
 };
 
@@ -1653,9 +1955,10 @@ Player.prototype.clickRackTile = function(index, map) {
                 var corpseUnderfoot = map[Game.attempt.player._x + ',' + Game.attempt.player._y].corpse;
                 if (tiles.length == 1) {
                   var name = Game.glyphKind[tiles[0].corpse.glyph].name;
-                  if (tiles[0].corpse.rotted())
+                  if (tiles[0].corpse.rotted()) {
                     Game.attempt.message('You drop the ' + name + ' corpse and it immediately rots to nothing.');
-                  else {
+                    Game.attempt.wastedCorpse = true;
+                  } else {
                     dropCorpse(map, Game.attempt.player._x, Game.attempt.player._y,
                                [Game.attempt.player.level.up, Game.attempt.player.level.down],
                                tiles[0].corpse);
@@ -1673,11 +1976,14 @@ Player.prototype.clickRackTile = function(index, map) {
                           Game.attempt.player._x == Game.attempt.player.level.shrine.x &&
                           Game.attempt.player._y == Game.attempt.player.level.shrine.y ?
                               Game.attempt.player.level.shrine.type : null;
-                  if (shrine)
+                  if (shrine) {
                     Game.attempt.player.level.shrine = null;
+                    Game.attempt.triedShrine = true;
+                  }
                   if (word) {
                     var previousExperience = player.experience,
-                        score = spellValue(spell, shrine);
+                        scoreAndBingo = spellValue(spell, shrine),
+                        score = scoreAndBingo[0];
                         formatted = formatCastSpell(word, shrine);
                     player.experience += score;
                     Game.attempt.addSuccessfulSpellWord(word);
@@ -1686,14 +1992,31 @@ Player.prototype.clickRackTile = function(index, map) {
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
                       Game.attempt.message('You have improved.');
+                    if (scoreAndBingo[1] && Game.attempt.levels.length < 4)
+                      Game.attempt.message(Game.attempt.maybeUnlockAchievement('earliest_bingo'));
+                    spell.split('').forEach(function(f) {
+                                              if (!(f in Game.attempt.usedFoes))
+                                                Game.attempt.usedFoes[f] = true;
+                                            });
+                    if (shapeshifter.glyph in Game.attempt.usedFoes &&
+                        foeKinds.every(function(k) { return k.glyph in Game.attempt.usedFoes; }))
+                      Game.attempt.message(Game.attempt.maybeUnlockAchievement('use_every_foe'));
+                    if (shrine && ++Game.attempt.castAtShrines ==
+                        shrines.reduce(function(n, s) { return n + s.frequency; }, 0))
+                      Game.attempt.message(Game.attempt.maybeUnlockAchievement('every_shrine'));
                     if (word == 'yendor') {
-                      Game.completeGame(Game.attempt, true);
+                      if (!Game.attempt.wastedCorpse && Game.attempt.levelsHaveCorpses())
+                        Game.attempt.wastedCorpse = true;
+                      Game.completeGame(Game.attempt, true, player.experience - score);
                       Game.showGameSummary(Game.attempt);
                     }
-                  }
-                  else {
+                  } else {
                     Game.attempt.addFailedSpell(spell);
-                    Game.attempt.message('Nothing happens.');
+                    Game.attempt.wastedCorpse = true;
+                    if (spell == 'xyzzy')
+                      Game.attempt.message(Game.attempt.maybeUnlockAchievement('xyzzy'));
+                    else
+                      Game.attempt.message("That's not a spell.");
                   }
                 }
                 tiles.length = 0;
@@ -1849,6 +2172,28 @@ var handleTitleClick = function(e) {
           Game.titleButtons[i].action();
           return true;
         }
+}
+
+var handleAchievementsClick = function(e) {
+  var coords, i, j, button;
+
+  if (e.type == 'keydown') return false;
+  coords = Game.display.eventToPosition(useAnyTouches(e));
+  if (coords[0] >= 0 && coords[1] >= 0)
+    for (i = 0; i < Game.achievementsButtons.length; i++) {
+      button = Game.achievementsButtons[i];
+      if (!button) continue;
+      for (j = 0; j < button.locs.length; j++)
+        if (button.locs[j].x == coords[0] && button.locs[j].y == coords[1]) {
+          if (button.index !== undefined)
+            Game.showAchievements.call(Game, button.index);
+          else {
+            delete Game.achievementsButtons;
+            Game.showTitle();
+          }
+          return true;
+        }
+    }
 }
 
 Player.prototype.handleEvent = function(e) {
