@@ -195,7 +195,8 @@ Attempt.prototype.restore = function(state) {
   this.shrines = state.sh;
   this.rack = state.rack.map(function(c) { return new Corpse(c.g, c.t); });
   this.spellsCast = state.c.map(function(s) {
-    return { tiles: s[0], depth: s[1], shrine: s[2] };
+    return { tiles: s[0], depth: s[1], shrine: s[2],
+             formatted: s.length < 4 ? formatCastSpell(s[0], s[2]) : s[3] };
   });
   this.dictionary = 'd' in state ?
       { goodWords: state.d.g,
@@ -212,7 +213,7 @@ Attempt.prototype.state = function() {
       b: this.balanceVersion,
       f: this.complete,
       c: this.spellsCast.map(function(s) {
-           return [s.tiles, s.depth, s.shrine];
+           return [s.tiles, s.depth, s.shrine, s.formatted];
          }),
       d: { g: this.dictionary.goodWords,
            b: this.dictionary.badPatterns.map(function(re) { return re.source; }) }};
@@ -268,12 +269,19 @@ Attempt.prototype.levelState = function(i) {
   return state;
 }
 
+var deparenthesize = function(word) {
+  return word.replace(/[()]/g, '');
+};
+
 // Add the resulting word from a given successfully cast spell ("boa" or "(b)o(a)", not
-// the original tiles like ".o.") to the dictionary of good spells.
+// the original tiles like ".o.") to the dictionary of good spells. If the word already
+// exists in the list, bump it to the end.
 Attempt.prototype.addSuccessfulSpellWord = function(word) {
-  var bareWord = word.replace(/[()]/g, '');
-  if (this.dictionary.goodWords.indexOf(bareWord) == -1)
-    this.dictionary.goodWords.push(bareWord);
+  var bareWord = deparenthesize(word),
+      index = this.dictionary.goodWords.indexOf(bareWord);
+  if (index >= 0)
+    this.dictionary.goodWords.splice(index, 1)
+  this.dictionary.goodWords.push(bareWord);
 }
 
 // Add the given failed spell ('baf' or 'b.f') to the dictionary of bad spells.
@@ -747,7 +755,7 @@ var formatCastSpell = function(text, shrineType) {
 }
 
 var formatSpell = function(castSpell, value) {
-  return formatCastSpell(checkWord(castSpell.tiles), castSpell.shrine) + ' (' + value + ')';
+  return castSpell.formatted + ' (' + value + ')';
 };
 
 var drawButton = function(display, button, origin, xmax, ymax) {
@@ -772,7 +780,7 @@ var drawButton = function(display, button, origin, xmax, ymax) {
 
 var Game = {
     version: 9,
-    balanceVersion: 7,
+    balanceVersion: 8,
     display: null,
     engine: null,
     scheduler: null,
@@ -1461,7 +1469,13 @@ var levelFor = function(experience) {
   return experienceLevelDefinitions[experienceLevelDefinitions.length-1];
 }
 
-var findWordWithBlank = function(word) {
+// Matches a word pattern like 'b.a' to a valid word, returning
+// 'b(a)a'. If the pattern matches multiple valid words and a history
+// list is provided with the most recently used word last, then
+// returns the least recently used option. As a result, if a player
+// keeps playing 'b.a' they will cycle through 'b(a)a', 'b(o)a' and
+// 'b(r)a' before getting 'b(a)a' again.
+var findWordWithBlank = function(word, history) {
   var matches = [],
       pattern = new RegExp('^' + word + '$'),
       parenthesizeBlankMatch = function(word, entry) {
@@ -1474,16 +1488,42 @@ var findWordWithBlank = function(word) {
         for (var entry in list)
           if (list.hasOwnProperty(entry) && entry.match(pattern))
             matches.push(parenthesizeBlankMatch(word, entry));
-      };
+      },
+      match,
+      bareMatches,
+      historyIndex,
+      matchIndex;
   pushMatches(word, pattern, words_am);
   pushMatches(word, pattern, words_nz);
   matches.sort();
-  return matches[0];
+  if (!history) return matches[0];
+  // try to find the first match that isn't in history
+  match = matches.find(function(m) { return history.indexOf(deparenthesize(m)) == -1; });
+  if (match) return match;
+  // otherwise return the earliest used one
+  bareMatches = matches.map(function(m) { return deparenthesize(m); });
+  for (historyIndex = 0; historyIndex < history.length; historyIndex++) {
+    matchIndex = bareMatches.indexOf(history[historyIndex]);
+    if (matchIndex != -1)
+      return matches[matchIndex];
+  }
 }
 
-var checkWord = function(word) {
+var findWordWithBlankTestCases = function() {
+  [['b.m', [], 'b(a)m'],
+   ['b.m', ['bam'], 'b(u)m'],
+   ['b.m', ['bam', 'bum'], 'b(a)m'],
+   ['b.m', ['bum'], 'b(a)m'],
+   ['b.m', ['bum', 'bam'], 'b(u)m']].forEach(function(test) {
+    var result = findWordWithBlank(test[0], test[1]);
+    if (result != test[2])
+      console.error('Got ' + result + ' instead of ' + test[2] + ' for ' + test[0] + ', ' + test[1]);
+  });
+}
+
+var checkWord = function(word, history) {
   return word.indexOf('.') >= 0 ?
-      findWordWithBlank(word) :
+      findWordWithBlank(word, history) :
       word == 'yendor' || word in words_am || word in words_nz ? word : false;
 }
 
@@ -1628,7 +1668,7 @@ Player.prototype.clickRackTile = function(index, map) {
                   var spell = '';
                   for (var j = 0; j < tiles.length; j++)
                     spell += tiles[j].corpse.glyph;
-                  var word = checkWord(spell),
+                  var word = checkWord(spell, Game.attempt.dictionary.goodWords),
                       shrine = Game.attempt.player.level.shrine &&
                           Game.attempt.player._x == Game.attempt.player.level.shrine.x &&
                           Game.attempt.player._y == Game.attempt.player.level.shrine.y ?
@@ -1638,10 +1678,11 @@ Player.prototype.clickRackTile = function(index, map) {
                   if (word) {
                     var previousExperience = player.experience,
                         score = spellValue(spell, shrine);
+                        formatted = formatCastSpell(word, shrine);
                     player.experience += score;
                     Game.attempt.addSuccessfulSpellWord(word);
-                    Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine });
-                    Game.attempt.message('You cast ' + formatCastSpell(word, shrine) + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
+                    Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine, formatted: formatted });
+                    Game.attempt.message('You cast ' + formatted + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
                       Game.attempt.message('You have improved.');
