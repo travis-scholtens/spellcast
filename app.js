@@ -394,7 +394,11 @@ Attempt.prototype.levelState = function(i) {
                                 ts.r = 1;
                               return ts;
                             }),
-      foeData: listState(this.levels[i].foes)
+      foeData: listState(this.levels[i].foes.map(
+                             function(f) {
+                               f.time = Game.scheduler.getTimeOf(f);
+                               return f;
+                             }))
       };
   return state;
 }
@@ -1033,12 +1037,12 @@ var Game = {
       }
       this._drawWholeMap(this.attempt);
 
-      Game.scheduler.add(this.attempt.player, true);
+      Game.scheduler.add(this.attempt.player, true, 0);
       Game.schedule(this.attempt.player.level.foes);
     },
 
     schedule: function(foes) {
-      foes.forEach(function(f) { this.add(f, true); }.bind(this.scheduler));
+      foes.forEach(function(f) { this.add(f, true, f.time); }.bind(this.scheduler));
     },
 
     unschedule: function(foes) {
@@ -2223,6 +2227,7 @@ var Foe = function(kindOrState, level, x, y) {
       this.health = this.shiftedKind.health;
     } else
       this.health = this.kind.health;
+    this.time = 1/this.getSpeed();
   }
 }
 
@@ -2235,6 +2240,7 @@ Foe.prototype.restore = function(state) {
   this.lastSawPlayer = state.lastSawPlayer;
   this.revealed = state.revealed;
   this.health = state.health;
+  this.time = 't' in state ? state.t : 1/this.getSpeed();
 }
 
 Foe.prototype.state = function() {
@@ -2244,7 +2250,8 @@ Foe.prototype.state = function() {
       kindGlyph: this.kind.glyph,
       lastSawPlayer: this.lastSawPlayer,
       revealed: this.revealed,
-      health: this.health };
+      health: this.health,
+      t: this.time };
   if (this.kind === shapeshifter)
     state.shiftedKindGlyph = this.shiftedKind.glyph;
   return state;
