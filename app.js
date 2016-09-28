@@ -1158,7 +1158,6 @@ var Game = {
                         Game.display.clear();
                         ROT.RNG.setState(gameInProgress.rng);
                         Game.newAttempt(gameInProgress.attempt);
-                        Game.engine.start();
                       } :
                       function() {
                         Game.display.clear();
