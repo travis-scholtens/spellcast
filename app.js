@@ -1792,8 +1792,7 @@ var findWordWithBlank = function(word, history) {
       bareMatches,
       historyIndex,
       matchIndex;
-  pushMatches(word, pattern, words_am);
-  pushMatches(word, pattern, words_nz);
+  pushMatches(word, pattern, words);
   matches.sort();
   if (!history) return matches[0];
   // try to find the first match that isn't in history
@@ -1823,7 +1822,7 @@ var findWordWithBlankTestCases = function() {
 var checkWord = function(word, history) {
   return word.indexOf('.') >= 0 ?
       findWordWithBlank(word, history) :
-      word == 'yendor' || word in words_am || word in words_nz ? word : false;
+      word == 'yendor' || word in words ? word : false;
 }
 
 var spellValue = function(spell, shrineType) {
