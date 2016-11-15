@@ -1102,9 +1102,10 @@ var Game = {
       if (button !== undefined) {
         drawButton(this.display, button, origin, xmax, ymax);
         result.actButton = [];
-        for (x = 0; x < button.length; x++)
-          result.actButton.push({x: origin.x + xmax/2 - button.length/2 + x,
-                                 y: origin.y + ymax - 3});
+        for (x = -1; x < button.length+1; x++)
+          for (y = -1; y <= 1; y++)
+            result.actButton.push({x: origin.x + xmax/2 - button.length/2 + x,
+                                   y: origin.y + ymax - 3 + y});
       }
       return result;
     },
@@ -1191,10 +1192,11 @@ var Game = {
         ymax = y + spacing * i;
         drawButton(this.display, this.titleButtons[i].text, origin, xmax, ymax);
         this.titleButtons[i].locs = [];
-        for (x = 0; x < this.titleButtons[i].text.length; x++)
-          this.titleButtons[i].locs.push(
-              {x: origin.x + xmax/2 - this.titleButtons[i].text.length/2 + x,
-               y: origin.y + ymax - 3});
+        for (x = -1; x < this.titleButtons[i].text.length+1; x++)
+          for (var dy = -1; dy <= 1; dy++)
+            this.titleButtons[i].locs.push(
+                {x: origin.x + xmax/2 - this.titleButtons[i].text.length/2 + x,
+                 y: origin.y + ymax - 3 + dy});
       }
     },
 
@@ -1236,6 +1238,7 @@ var Game = {
           iconColor,
           textColor,
           options = this.display.getOptions(),
+          buttonLocs = [],
           buttons = [];
       this.display.clear();
       for (i = 0; i < achievements.length; i++) {
@@ -1282,8 +1285,11 @@ var Game = {
       if (hidden > 0)
         this.display.drawText(4, y+1, surroundText('+' + hidden + ' more still hidden', 'gray'), options.width - 4);
       drawButton(Game.display, 'Done', {x: 0, y: 0}, options.width, options.height);
-      buttons.push({locs: 'Done'.split('').map(function(_, i) { return { x: options.width/2 - 4 + i,
-                                                                         y: options.height - 3 }; }) });
+      for (x = -1; x < 'Done'.length+1; x++)
+        for (y = -1; y <= 1; y++)
+          buttonLocs.push({ x: options.width/2 - 4 + x,
+                            y: options.height - 3 + y });
+      buttons.push({locs: buttonLocs});
       this.achievementsButtons = buttons;
     },
 
