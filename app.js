@@ -176,9 +176,16 @@ var achievements = [
                   undefined,
                   ['victory_kill_all_seen']),
   new Achievement('victory_at_low_level',
+                  true,
+                  'Extreme Precocity',
+                  'Cast YENDOR while having no more than 100 experience points.',
+                  'You ascended with an ultra low experience level!',
+                  undefined,
+                  ['victory']),
+  new Achievement('victory_at_low_level_2',
                   false,
                   'Precocity',
-                  'Cast YENDOR while having no more than 100 experience points.',
+                  'Cast YENDOR while having no more than 350 experience points.',
                   'You ascended with a very low experience level!',
                   undefined,
                   ['victory']),
@@ -1341,8 +1348,8 @@ var Game = {
           attempt.maybeUnlockAchievement('victory_shallowest');
         if (attempt.dictionary.badPatterns.length == 0)
           attempt.maybeUnlockAchievement('victory_no_fizzles');
-        if (previousExperience <= 100)
-          attempt.maybeUnlockAchievement('victory_at_low_level');
+        if (previousExperience <= 350)
+          attempt.maybeUnlockAchievement('victory_at_low_level_2');
         if (attempt.spellsCast.every(function(s) { return s.tiles.length < 7; }))
           attempt.maybeUnlockAchievement('victory_no_bingos');
         if (!attempt.wastedCorpse)
