@@ -1123,7 +1123,8 @@ var Game = {
       this.showingTutorial = true;
       this.showTextScreen([
           'Fight monsters',
-          'Use their corpses to cast spells for more power',
+          'Use their corpses to cast spells to score points',
+          'Scoring points makes  you more powerful',
           'Start with the spell "AA" (a kind of lava)',
           'Spells cast on a shrine (like %b{' + shrines[2].color + '} %b{}) are worth more',
           '7-corpse spells get a bonus',
@@ -2003,7 +2004,7 @@ Player.prototype.clickRackTile = function(index, map) {
                     player.experience += score;
                     Game.attempt.addSuccessfulSpellWord(word);
                     Game.attempt.spellsCast.push({ tiles: spell, depth: player.level.depth, shrine: shrine, formatted: formatted });
-                    Game.attempt.message('You cast ' + formatted + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
+                    Game.attempt.message((deparenthesize(word) == 'trump' ? 'Fuck' : 'You cast') + ' ' + formatted + '. %c{' + levelIcon.color + '}+' + score + levelIcon.glyph);
                     if (experienceLevelDefinitions.indexOf(levelFor(player.experience)) >
                         experienceLevelDefinitions.indexOf(levelFor(previousExperience)))
                       Game.attempt.message('You have improved.');
