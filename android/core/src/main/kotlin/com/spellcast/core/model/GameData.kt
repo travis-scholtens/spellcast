@@ -226,12 +226,8 @@ object GameData {
         ExperienceLevel(expThreshold = 1036, meanDamage = 38.5, speed = 195)
     )
 
-    fun levelIndexFor(experience: Int): Int {
-        for (i in 1 until experienceLevels.size) {
-            if (experience < experienceLevels[i].expThreshold) {
-                return i
-            }
-        }
-        return experienceLevels.lastIndex
-    }
+    fun levelIndexFor(experience: Int): Int =
+        (1 until experienceLevels.size)
+            .firstOrNull { experience < experienceLevels[it].expThreshold }
+            ?: experienceLevels.lastIndex
 }

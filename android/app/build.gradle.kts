@@ -52,17 +52,15 @@ kotlin {
 
 val copyAndroidNatives by tasks.registering {
   doFirst {
-    val abis = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-    abis.forEach { abi ->
-      file("src/main/jniLibs/$abi").mkdirs()
-    }
-    natives.files.forEach { jar ->
-      val abi = abis.firstOrNull { jar.name.endsWith("natives-$it.jar") }
-      if (abi != null) {
-        copy {
-          from(zipTree(jar))
-          into("src/main/jniLibs/$abi")
-          include("*.so")
+    listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64").let { abis ->
+      abis.forEach { abi -> file("src/main/jniLibs/$abi").mkdirs() }
+      natives.files.forEach { jar ->
+        abis.firstOrNull { jar.name.endsWith("natives-$it.jar") }?.let { abi ->
+          copy {
+            from(zipTree(jar))
+            into("src/main/jniLibs/$abi")
+            include("*.so")
+          }
         }
       }
     }

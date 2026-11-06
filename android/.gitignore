@@ -16,3 +16,4 @@
 local.properties
 __pycache__/
 *.pyc
+app/src/main/assets/words.txt

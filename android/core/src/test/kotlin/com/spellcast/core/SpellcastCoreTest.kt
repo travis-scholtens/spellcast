@@ -11,17 +11,14 @@ class SpellcastCoreTest {
 
     @Test
     fun aleaRngStateRoundTripIsDeterministic() {
-        val rng = AleaRng(12345L)
-        repeat(10) { rng.getUniform() }
+        val rng = AleaRng(12345L).apply { repeat(10) { getUniform() } }
         val savedState = rng.getState()
-
-        val seq1 = List(20) { rng.getUniform() }
-
-        val restoredRng = AleaRng(99999L)
-        restoredRng.setState(savedState)
-        val seq2 = List(20) { restoredRng.getUniform() }
-
-        assertEquals(seq1, seq2)
+        assertEquals(
+            List(20) { rng.getUniform() },
+            AleaRng(99999L).apply { setState(savedState) }.let { restored ->
+                List(20) { restored.getUniform() }
+            }
+        )
     }
 
     @Test
