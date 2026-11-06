@@ -5,7 +5,8 @@ import kotlin.math.ln
 import kotlin.math.sqrt
 
 /**
- * 1:1 port of ROT.RNG (Johannes Baagøe's Alea PRNG) supporting deterministic state snapshots.
+ * 1:1 port of ROT.RNG (Johannes Baagøe's Alea PRNG) supporting deterministic state snapshots
+ * and ROT's Array.random / Array.randomize helpers.
  */
 class AleaRng(seed: Long = System.currentTimeMillis()) {
 
@@ -18,12 +19,12 @@ class AleaRng(seed: Long = System.currentTimeMillis()) {
 
     private var state: State = stateFromSeed(seed)
 
-    fun setSeed(seed: Long) {
+    fun setSeed(seed: Long): AleaRng = apply {
         state = stateFromSeed(seed)
     }
 
     fun getUniform(): Double =
-        (2091639.0 * state.s0 + state.c * 2.3283064365386963e-10).let { t ->
+        (2091639.0 * state.s0 + state.c * FRAC).let { t ->
             floor(t).let { nextC ->
                 State(
                     s0 = state.s1,
@@ -45,6 +46,8 @@ class AleaRng(seed: Long = System.currentTimeMillis()) {
             .first { (_, r) -> r > 0.0 && r <= 1.0 }
             .let { (u, r) -> mean + u * sqrt(-2.0 * ln(r) / r) * stddev }
 
+    fun getPercentage(): Int = 1 + floor(getUniform() * 100.0).toInt()
+
     fun <T> getWeightedValue(weights: Map<T, Number>): T =
         (getUniform() * weights.values.sumOf { it.toDouble() }).let { target ->
             weights.entries
@@ -57,25 +60,48 @@ class AleaRng(seed: Long = System.currentTimeMillis()) {
                 ?: weights.keys.last()
         }
 
+    fun <T> randomElement(items: List<T>): T? =
+        if (items.isEmpty()) null else items[floor(getUniform() * items.size).toInt()]
+
+    fun <T> randomize(items: List<T>): List<T> =
+        generateSequence(items to emptyList<T>()) { (remaining, acc) ->
+            if (remaining.isEmpty()) {
+                null
+            } else {
+                val idx = floor(getUniform() * remaining.size).toInt()
+                (remaining.take(idx) + remaining.drop(idx + 1)) to (acc + remaining[idx])
+            }
+        }.last().second
+
     fun getState(): List<Double> = listOf(state.s0, state.s1, state.s2, state.c)
 
-    fun setState(snapshot: List<Double>) {
+    fun setState(snapshot: List<Double>): AleaRng = apply {
         require(snapshot.size >= 4) { "Invalid Alea RNG state" }
         state = State(snapshot[0], snapshot[1], snapshot[2], snapshot[3])
     }
 
+    fun clone(): AleaRng = AleaRng().setState(getState())
+
     companion object {
+        private const val FRAC = 2.3283064365386963e-10 // 2^-32
+
+        private fun uint32(value: Double): Long =
+            value.toLong() and 0xFFFFFFFFL
+
         private fun stateFromSeed(seed: Long): State =
-            ((if (seed < 1L) 1.0 / (seed.toDouble() + 0.5) else seed.toDouble()) * 0.00000000023283064365386963 % 1.0)
-                .let { s0 ->
-                    ((s0 * 2246822519.0 + 0.3183098861837907) % 1.0).let { s1 ->
-                        State(
-                            s0 = s0,
-                            s1 = s1,
-                            s2 = (s1 * 3266489917.0 + 0.2718281828459045) % 1.0,
-                            c = 1.0
-                        )
+            (if (seed < 1L) 1.0 / seed.toDouble() else seed.toDouble()).let { norm ->
+                uint32(norm).let { s0Bits ->
+                    uint32(norm * 69069.0 + 1.0).let { s1Bits ->
+                        uint32(s1Bits * 69069.0 + 1.0).let { s2Bits ->
+                            State(
+                                s0 = s0Bits * FRAC,
+                                s1 = s1Bits * FRAC,
+                                s2 = s2Bits * FRAC,
+                                c = 1.0
+                            )
+                        }
                     }
                 }
+            }
     }
 }
