@@ -264,6 +264,7 @@ var Attempt = function(state) {
     this.dictionary = { goodWords: [], badPatterns: [] };
     this.wordRepeated = false;
     this.achievements = {};
+    delete Game.display.lastDrawnAt;
   
     this.levels = [_generateMap(1, this.rngState, this.shrines)];
     localStorage['spellyLevelState0'] = JSON.stringify(this.levelState(0));
@@ -333,10 +334,12 @@ Attempt.prototype.restore = function(state) {
       { goodWords: [], badPatterns: [] };
   this.wordRepeated = 'r' in state ? state.r : true;
   this.achievements = 'h' in state ? state.h : {};
+  Game.display.lastDrawnAt = 'ld' in state ?
+      Game.scheduler.getTime() - state.ld : undefined;
 }
 
 Attempt.prototype.state = function() {
-  return { player: this.player.state(),
+  var state = { player: this.player.state(),
       rack: this.rack.map(function(c) { return { g: c.glyph, t: Game.scheduler.getTime() - c.timeOfDeath }; }),
       sh: this.shrines,
       tsh: this.triedShrine,
@@ -354,6 +357,9 @@ Attempt.prototype.state = function() {
            b: this.dictionary.badPatterns.map(function(re) { return re.source; }) },
       r: this.wordRepeated,
       h: this.achievements };
+  if (Game.display.lastDrawnAt !== undefined)
+    state.ld = Game.scheduler.getTime() - Game.display.lastDrawnAt;
+  return state;
 }
 
 Attempt.prototype.restoreLevel = function(state) {
