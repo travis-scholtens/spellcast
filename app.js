@@ -2249,8 +2249,11 @@ Foe.prototype.restore = function(state) {
   this._x = state.x;
   this._y = state.y;
   this.kind = Game.glyphKind[state.kindGlyph];
-  if (this.kind === shapeshifter)
+  if (this.kind === shapeshifter) {
     this.shiftedKind = Game.glyphKind[state.shiftedKindGlyph];
+    if ('hurtSinceShift' in state)
+      this.hurtSinceShift = state.hurtSinceShift;
+  }
   this.lastSawPlayer = state.lastSawPlayer;
   this.revealed = state.revealed;
   this.health = state.health;
@@ -2266,8 +2269,11 @@ Foe.prototype.state = function() {
       revealed: this.revealed,
       health: this.health,
       t: this.time };
-  if (this.kind === shapeshifter)
+  if (this.kind === shapeshifter) {
     state.shiftedKindGlyph = this.shiftedKind.glyph;
+    if ('hurtSinceShift' in this)
+      state.hurtSinceShift = this.hurtSinceShift;
+  }
   return state;
 }
 
