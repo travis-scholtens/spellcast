@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.gradle.api.artifacts.Configuration
 
 plugins {
@@ -5,6 +6,13 @@ plugins {
 }
 
 val natives: Configuration by configurations.creating
+
+val localProps = Properties().apply {
+  rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+
+fun signingProp(name: String): String? =
+  System.getenv(name) ?: findProperty(name)?.toString() ?: localProps.getProperty(name)
 
 android {
   namespace = "com.spellcast.automotive"
@@ -18,9 +26,21 @@ android {
     versionName = "1.0"
   }
 
+  signingConfigs {
+    signingProp("SPELLCAST_KEYSTORE_FILE")?.let(::file)?.takeIf { it.exists() }?.let { keystore ->
+      create("release") {
+        storeFile = keystore
+        storePassword = signingProp("SPELLCAST_KEYSTORE_PASSWORD")
+        keyAlias = signingProp("SPELLCAST_KEY_ALIAS")
+        keyPassword = signingProp("SPELLCAST_KEY_PASSWORD")
+      }
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = false
+      signingConfig = signingConfigs.findByName("release")
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }
