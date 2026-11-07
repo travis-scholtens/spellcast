@@ -16,4 +16,6 @@
 local.properties
 __pycache__/
 *.pyc
+*.jks
+*.keystore
 app/src/main/assets/words.txt
