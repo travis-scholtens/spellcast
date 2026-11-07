@@ -67,6 +67,29 @@ val copyAndroidNatives by tasks.registering {
   }
 }
 
+val generateWordsAsset by tasks.registering {
+  doFirst {
+    val targetFile = file("src/main/assets/words.txt")
+    if (!targetFile.exists()) {
+      (System.getenv("WORDS_FILE") ?: findProperty("WORDS_FILE")?.toString())
+        ?.let(::file)
+        ?.takeIf { it.exists() }
+        ?.useLines { lines ->
+          targetFile.parentFile.mkdirs()
+          targetFile.writeText(
+            lines.map { it.trim().lowercase() }
+              .filter { it.length in 2..7 }
+              .joinToString("\n", postfix = "\n")
+          )
+        }
+    }
+  }
+}
+
+tasks.matching { it.name.contains("merge") && it.name.contains("Assets") }.configureEach {
+  dependsOn(generateWordsAsset)
+}
+
 tasks.matching { it.name.contains("merge") && it.name.contains("JniLibFolders") }.configureEach {
   dependsOn(copyAndroidNatives)
 }
