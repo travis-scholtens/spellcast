@@ -136,6 +136,16 @@ class AsciiDisplay(private val fontAssetPath: String = "SpellyFreeMono.ttf") {
         cells = emptyMap()
     }
 
+    fun clearRect(minX: Double, minY: Double, maxX: Double, maxY: Double) {
+        cells = cells.filterValues { cell ->
+            cell.x !in minX..maxX || cell.y !in minY..maxY
+        }
+    }
+
+    fun cellCenterPx(col: Int, row: Int): Pair<Double, Double> =
+        (metrics.viewportOriginX + (col + 0.5) * metrics.cellWidthPx) to
+            (metrics.viewportOriginY + (row + 0.5) * metrics.cellHeightPx)
+
     fun draw(
         x: Double,
         y: Double,
