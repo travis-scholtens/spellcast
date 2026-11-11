@@ -1,4 +1,4 @@
-package com.spellcast.automotive
+package com.travisscholtens.spellcast
 
 import android.content.Context
 import android.content.pm.PackageManager

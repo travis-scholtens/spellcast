@@ -15,11 +15,11 @@ fun signingProp(name: String): String? =
   System.getenv(name) ?: findProperty(name)?.toString() ?: localProps.getProperty(name)
 
 android {
-  namespace = "com.spellcast.automotive"
+  namespace = "com.travisscholtens.spellcast"
   compileSdk = 35
 
   defaultConfig {
-    applicationId = "com.spellcast.automotive"
+    applicationId = "com.travisscholtens.spellcast"
     minSdk = 29
     targetSdk = 35
     versionCode = 1
