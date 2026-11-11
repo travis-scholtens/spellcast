@@ -1,4 +1,4 @@
-package com.spellcast.automotive
+package com.travisscholtens.spellcast
 
 import android.os.Bundle
 import com.badlogic.gdx.backends.android.AndroidApplication
