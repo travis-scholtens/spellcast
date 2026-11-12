@@ -32,12 +32,10 @@ android {
     create("mobile") {
       dimension = "formFactor"
       versionCode = 1001
-      manifestPlaceholders["automotiveRequired"] = "false"
     }
     create("automotive") {
       dimension = "formFactor"
       versionCode = 2001
-      manifestPlaceholders["automotiveRequired"] = "true"
     }
   }
 
