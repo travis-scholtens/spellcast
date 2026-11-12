@@ -16,12 +16,12 @@ fun signingProp(name: String): String? =
 
 android {
   namespace = "com.travisscholtens.spellcast"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.travisscholtens.spellcast"
     minSdk = 29
-    targetSdk = 35
+    targetSdk = 36
     versionCode = 1
     versionName = "1.0"
   }
@@ -52,8 +52,11 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
+      isMinifyEnabled = true
       signingConfig = signingConfigs.findByName("release")
+      ndk {
+        debugSymbolLevel = "FULL"
+      }
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }

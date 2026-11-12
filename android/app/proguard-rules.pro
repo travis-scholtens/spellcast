@@ -1,0 +1,4 @@
+-keep class com.badlogic.gdx.** { *; }
+-keep class com.travisscholtens.spellcast.** { *; }
+-keep class com.spellcast.** { *; }
+-dontwarn com.badlogic.gdx.**
